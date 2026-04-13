@@ -10,6 +10,40 @@
 	let searchQuery = $state('');
 	let selectedTechs = $state<string[]>([]);
 	let allTechs = $state<string[]>([]);
+	let selectedAlbum = $state<{ url: string; type: 'image' | 'video' }[] | null>(null);
+	let currentAlbumIndex = $state(0);
+
+	function openAlbum(album: { url: string; type: 'image' | 'video' }[] | null) {
+		if (album && album.length > 0) {
+			selectedAlbum = album;
+			currentAlbumIndex = 0;
+			document.body.style.overflow = 'hidden';
+		}
+	}
+
+	function closeAlbum() {
+		selectedAlbum = null;
+		document.body.style.overflow = 'auto';
+	}
+
+	function nextAlbumItem() {
+		if (selectedAlbum) {
+			currentAlbumIndex = (currentAlbumIndex + 1) % selectedAlbum.length;
+		}
+	}
+
+	function prevAlbumItem() {
+		if (selectedAlbum) {
+			currentAlbumIndex = (currentAlbumIndex - 1 + selectedAlbum.length) % selectedAlbum.length;
+		}
+	}
+
+	function handleKeydown(e: KeyboardEvent) {
+		if (!selectedAlbum) return;
+		if (e.key === 'Escape') closeAlbum();
+		if (e.key === 'ArrowRight') nextAlbumItem();
+		if (e.key === 'ArrowLeft') prevAlbumItem();
+	}
 
 	onMount(async () => {
 		try {
@@ -61,6 +95,8 @@
 		}
 	});
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <svelte:head>
 	<title>Projetos | RickZin</title>
@@ -135,7 +171,7 @@
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 				{#each filteredProjects as project, i}
 					<div 
-						class="card group"
+						class="card group relative"
 						in:fly={{ y: 20, duration: 400, delay: i * 50 }}
 					>
 						<a href="/projetos/{project.id}" class="block">
@@ -153,7 +189,23 @@
 										</svg>
 									</div>
 								{/if}
+								<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
 							</div>
+						</a>
+
+						{#if project.album && project.album.length > 0}
+							<button 
+								onclick={(e) => { e.preventDefault(); e.stopPropagation(); openAlbum(project.album); }}
+								class="absolute bottom-[160px] right-6 p-2 rounded-full bg-accent-primary text-white shadow-lg transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all z-20 hover:scale-110"
+								title="Ver Álbum"
+							>
+								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+								</svg>
+							</button>
+						{/if}
+
+						<a href="/projetos/{project.id}" class="block">
 							<h3 class="text-xl font-semibold mb-2 group-hover:text-accent-primary transition-colors">{project.title}</h3>
 							<p class="text-slate-400 text-sm line-clamp-2 mb-4">{project.description}</p>
 						</a>
@@ -210,6 +262,84 @@
 		{/if}
 	</div>
 </div>
+
+{#if selectedAlbum}
+	<div 
+		class="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm"
+		transition:fade={{ duration: 200 }}
+	>
+		<!-- Close Button -->
+		<button 
+			onclick={(e) => { e.stopPropagation(); closeAlbum(); }}
+			class="absolute top-6 right-6 p-3 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all z-[110] bg-black/20"
+			aria-label="Fechar álbum"
+		>
+			<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+			</svg>
+		</button>
+
+		<!-- Navigation Buttons -->
+		{#if selectedAlbum.length > 1}
+			<button 
+				onclick={(e) => { e.stopPropagation(); prevAlbumItem(); }}
+				class="absolute left-6 top-1/2 -translate-y-1/2 p-4 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all z-[110] bg-black/20"
+				aria-label="Anterior"
+			>
+				<svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+				</svg>
+			</button>
+
+			<button 
+				onclick={(e) => { e.stopPropagation(); nextAlbumItem(); }}
+				class="absolute right-6 top-1/2 -translate-y-1/2 p-4 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all z-[110] bg-black/20"
+				aria-label="Próximo"
+			>
+				<svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+				</svg>
+			</button>
+		{/if}
+
+		<!-- Media Container -->
+		<div class="w-full h-full flex items-center justify-center p-4 sm:p-12">
+			{#key currentAlbumIndex}
+				<div 
+					class="relative max-w-5xl w-full h-full flex flex-col items-center justify-center"
+					in:fly={{ x: 20, duration: 300 }}
+					out:fly={{ x: -20, duration: 300 }}
+				>
+					<div class="w-full max-h-[80vh] flex items-center justify-center rounded-2xl overflow-hidden shadow-2xl bg-zinc-900/50 border border-white/10">
+						{#if selectedAlbum[currentAlbumIndex].type === 'image'}
+							<img 
+								src={selectedAlbum[currentAlbumIndex].url} 
+								alt="Project media {currentAlbumIndex + 1}" 
+								class="max-h-[80vh] w-auto object-contain"
+							/>
+						{:else}
+							<video 
+								src={selectedAlbum[currentAlbumIndex].url} 
+								controls 
+								autoplay
+								class="max-h-[80vh] w-full aspect-video bg-black"
+							>
+								<track kind="captions" />
+							</video>
+						{/if}
+					</div>
+
+					<!-- Counter -->
+					{#if selectedAlbum.length > 1}
+						<div class="mt-6 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-white/80 text-sm font-medium backdrop-blur-md">
+							{currentAlbumIndex + 1} / {selectedAlbum.length}
+						</div>
+					{/if}
+				</div>
+			{/key}
+		</div>
+	</div>
+{/if}
 
 <style>
 	.line-clamp-2 {

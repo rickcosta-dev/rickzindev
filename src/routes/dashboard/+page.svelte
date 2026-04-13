@@ -28,9 +28,24 @@
 		description: '',
 		tech: '',
 		image_url: '',
+		album: [] as { url: string; type: 'image' | 'video' }[],
 		github_url: '',
-		live_url: ''
+		live_url: '',
+		created_at: new Date().toISOString().split('T')[0]
 	});
+
+	let newAlbumItem = $state({ url: '', type: 'image' as 'image' | 'video' });
+
+	function addAlbumItem() {
+		if (newAlbumItem.url) {
+			projectForm.album = [...projectForm.album, { ...newAlbumItem }];
+			newAlbumItem = { url: '', type: 'image' };
+		}
+	}
+
+	function removeAlbumItem(index: number) {
+		projectForm.album = projectForm.album.filter((_, i) => i !== index);
+	}
 
 	onMount(() => {
 		const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -55,7 +70,12 @@
 				getDocs(contactsQuery)
 			]);
 
-			projects = projectsSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Project[];
+			projects = projectsSnap.docs.map(d => {
+				const data = d.data();
+				// Converte Timestamp do Firebase para Date se existir
+				const created_at = data.created_at?.toDate ? data.created_at.toDate() : new Date(data.created_at);
+				return { id: d.id, ...data, created_at };
+			}) as Project[];
 			contacts = contactsSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Contact[];
 		} catch (error) {
 			console.error('Error loading dashboard data:', error);
@@ -72,13 +92,19 @@
 	function openModal(project?: Project) {
 		if (project) {
 			editingProject = project;
+			const date = project.created_at instanceof Date 
+				? project.created_at 
+				: (project.created_at?.toDate ? project.created_at.toDate() : new Date(project.created_at));
+			
 			projectForm = {
 				title: project.title,
 				description: project.description || '',
 				tech: project.tech?.join(', ') || '',
 				image_url: project.image_url || '',
+				album: project.album || [],
 				github_url: project.github_url || '',
-				live_url: project.live_url || ''
+				live_url: project.live_url || '',
+				created_at: date.toISOString().split('T')[0]
 			};
 		} else {
 			editingProject = null;
@@ -87,8 +113,10 @@
 				description: '',
 				tech: '',
 				image_url: '',
+				album: [],
 				github_url: '',
-				live_url: ''
+				live_url: '',
+				created_at: new Date().toISOString().split('T')[0]
 			};
 		}
 		showModal = true;
@@ -105,13 +133,19 @@
 			.map(t => t.trim())
 			.filter(t => t);
 
+		// Converte a string do input date para objeto Date
+		const selectedDate = new Date(projectForm.created_at);
+		// Ajusta para o fuso horário local se necessário, ou usa como UTC
+		
 		const projectData = {
 			title: projectForm.title,
 			description: projectForm.description || null,
 			tech: techArray,
 			image_url: projectForm.image_url || null,
+			album: projectForm.album.length > 0 ? projectForm.album : null,
 			github_url: projectForm.github_url || null,
 			live_url: projectForm.live_url || null,
+			created_at: selectedDate, // Salva como objeto Date (Firestore converte para Timestamp)
 			updated_at: serverTimestamp()
 		};
 
@@ -120,10 +154,7 @@
 				const projectRef = doc(db, 'projects', editingProject.id);
 				await updateDoc(projectRef, projectData);
 			} else {
-				await addDoc(collection(db, 'projects'), {
-					...projectData,
-					created_at: serverTimestamp()
-				});
+				await addDoc(collection(db, 'projects'), projectData);
 			}
 			closeModal();
 			await loadData();
@@ -228,15 +259,15 @@
 										</td>
 										<td class="py-3 px-4">
 											<div class="flex flex-wrap gap-1">
-												{#each (project.tech || []).slice(0, 2) as t}
-													<span class="px-2 py-0.5 text-xs bg-accent-primary/10 text-accent-primary rounded">
-														{t}
-													</span>
-												{/each}
-												{#if (project.tech || []).length > 2}
-													<span class="px-2 py-0.5 text-xs text-slate-500">
-														+{project.tech.length - 2}
-													</span>
+												{#if project.tech}
+													{#each project.tech.slice(0, 2) as t}
+														<span class="px-2 py-0.5 rounded bg-accent-primary/10 text-accent-primary text-[10px] font-medium">
+															{t}
+														</span>
+													{/each}
+													{#if project.tech.length > 2}
+														<span class="text-[10px] text-slate-500">+{project.tech.length - 2}</span>
+													{/if}
 												{/if}
 											</div>
 										</td>
@@ -248,6 +279,7 @@
 												<button 
 													onclick={() => openModal(project)}
 													class="p-2 text-slate-400 hover:text-accent-primary transition-colors"
+													title="Editar projeto"
 												>
 													<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -256,6 +288,7 @@
 												<button 
 													onclick={() => deleteProject(project.id)}
 													class="p-2 text-slate-400 hover:text-red-400 transition-colors"
+													title="Excluir projeto"
 												>
 													<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -303,6 +336,7 @@
 										<button 
 											onclick={() => deleteContact(contact.id)}
 											class="p-2 text-slate-400 hover:text-red-400 transition-colors"
+											title="Excluir mensagem"
 										>
 											<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -338,7 +372,7 @@
 				<h2 class="text-xl font-semibold">
 					{editingProject ? 'Editar Projeto' : 'Novo Projeto'}
 				</h2>
-				<button onclick={closeModal} class="text-slate-400 hover:text-white">
+				<button onclick={closeModal} class="text-slate-400 hover:text-white" title="Fechar modal">
 					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
 					</svg>
@@ -381,13 +415,75 @@
 				</div>
 
 				<div>
-					<label for="image_url" class="block text-sm font-medium mb-2">URL da Imagem</label>
+					<label for="image_url" class="block text-sm font-medium mb-2">URL da Imagem Principal *</label>
 					<input
 						type="url"
 						id="image_url"
 						bind:value={projectForm.image_url}
+						required
 						class="input"
 						placeholder="https://..."
+					/>
+				</div>
+
+				<div>
+					<label for="album_url" class="block text-sm font-medium mb-2">Álbum (Imagens e Vídeos)</label>
+					<div class="space-y-3 mb-4">
+						{#each projectForm.album as item, i}
+							<div class="flex gap-2 items-center bg-background-tertiary p-2 rounded-lg border border-zinc-800">
+								<div class="flex-1 truncate text-xs text-slate-400">{item.url}</div>
+								<span class="text-[10px] px-2 py-0.5 rounded bg-accent-primary/10 text-accent-primary uppercase">
+									{item.type}
+								</span>
+								<button 
+									type="button" 
+									onclick={() => removeAlbumItem(i)}
+									class="p-1 text-red-400 hover:bg-red-500/10 rounded transition-colors"
+									title="Remover item do álbum"
+								>
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+									</svg>
+								</button>
+							</div>
+						{/each}
+					</div>
+					
+					<div class="flex gap-2">
+						<input
+							type="url"
+							id="album_url"
+							bind:value={newAlbumItem.url}
+							class="input flex-1"
+							placeholder="URL da mídia..."
+						/>
+						<select 
+							bind:value={newAlbumItem.type}
+							class="input w-32"
+							aria-label="Tipo de mídia"
+						>
+							<option value="image">Imagem</option>
+							<option value="video">Vídeo</option>
+						</select>
+						<button 
+							type="button" 
+							onclick={addAlbumItem}
+							class="btn-outline px-4"
+							title="Adicionar ao álbum"
+						>
+							+
+						</button>
+					</div>
+				</div>
+
+				<div>
+					<label for="created_at" class="block text-sm font-medium mb-2">Data de Criação *</label>
+					<input
+						type="date"
+						id="created_at"
+						bind:value={projectForm.created_at}
+						required
+						class="input"
 					/>
 				</div>
 

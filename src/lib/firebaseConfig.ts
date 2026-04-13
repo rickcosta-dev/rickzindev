@@ -26,6 +26,7 @@ export interface Project {
   description: string | null;
   tech: string[] | null;
   image_url: string | null;
+  album: { url: string; type: 'image' | 'video' }[] | null;
   github_url: string | null;
   live_url: string | null;
   created_at: any;

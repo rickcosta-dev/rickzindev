@@ -18,7 +18,10 @@ export async function load({ params }: { params: { id: string } }) {
 
 	const q = query(collection(db, 'projects'), orderBy('created_at', 'desc'));
 	const querySnapshot = await getDocs(q);
-	const allProjects = querySnapshot.docs.map(d => ({ id: d.id, title: d.get('title') }));
+	const allProjects = querySnapshot.docs.map(d => ({ 
+		id: d.id, 
+		title: d.data().title as string 
+	}));
 
 	const projectIndex = allProjects.findIndex(p => p.id === params.id);
 	const prevProject = projectIndex > 0 ? allProjects[projectIndex - 1] : null;
