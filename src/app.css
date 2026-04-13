@@ -1,0 +1,86 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-tertiary: #1a1a25;
+  --accent-primary: #8b5cf6;
+  --accent-secondary: #3b82f6;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border-color: #27272a;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+@layer components {
+  .glass {
+    @apply bg-background-secondary/80 backdrop-blur-lg border border-white/5;
+  }
+
+  .card {
+    @apply bg-background-secondary border border-zinc-800 rounded-xl p-6 transition-all duration-300;
+  }
+
+  .card:hover {
+    @apply -translate-y-1 shadow-xl shadow-black/20;
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary rounded-xl font-semibold text-white transition-all duration-300 hover:scale-[1.02] hover:brightness-110;
+  }
+
+  .btn-outline {
+    @apply px-6 py-3 border-2 border-accent-primary text-accent-primary rounded-xl font-semibold transition-all duration-300 hover:bg-accent-primary hover:text-white;
+  }
+
+  .input {
+    @apply w-full px-4 py-3 bg-background-tertiary border border-zinc-800 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:border-accent-primary transition-colors;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
