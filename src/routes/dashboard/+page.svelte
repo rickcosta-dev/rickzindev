@@ -154,7 +154,7 @@
 </script>
 
 <svelte:head>
-	<title>Dashboard | Rick Gonzalez</title>
+	<title>Dashboard | RickZin</title>
 </svelte:head>
 
 <div class="min-h-screen py-24">

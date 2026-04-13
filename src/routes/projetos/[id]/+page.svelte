@@ -8,7 +8,7 @@
 </script>
 
 <svelte:head>
-	<title>{project.title} | Rick Gonzalez</title>
+	<title>{project.title} | RickZin</title>
 	<meta name="description" content={project.description || project.title} />
 </svelte:head>
 

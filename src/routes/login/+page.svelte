@@ -28,7 +28,7 @@
 </script>
 
 <svelte:head>
-	<title>Login | Rick Gonzalez</title>
+	<title>Login | RickZin</title>
 </svelte:head>
 
 <div class="min-h-screen flex items-center justify-center py-24">

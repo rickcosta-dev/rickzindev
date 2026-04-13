@@ -2,6 +2,7 @@
 	import '../app.css';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
+	import favicon from '$lib/assets/giño-rick-y-morty.gif';
 
 	let { children } = $props();
 	
@@ -29,11 +30,12 @@
 </script>
 
 <svelte:head>
-	<title>Rick Gonzalez | Fullstack Developer</title>
-	<meta name="description" content="Fullstack Developer specializing in modern web technologies. SvelteKit, Supabase, TypeScript." />
-	<meta property="og:title" content="Rick Gonzalez | Fullstack Developer" />
+	<title>RickZin | Fullstack Developer</title>
+	<meta name="description" content="Fullstack Developer specializing in modern web technologies. SvelteKit, Firebase, TypeScript." />
+	<meta property="og:title" content="RickZin | Fullstack Developer" />
 	<meta property="og:description" content="Fullstack Developer specializing in modern web technologies" />
 	<meta property="og:type" content="website" />
+	<link rel="icon" type="image/gif" href={favicon} />
 </svelte:head>
 
 <div class="min-h-screen flex flex-col">
@@ -43,10 +45,10 @@
 			<div class="flex items-center justify-between h-16">
 				<!-- Logo -->
 				<a href="/" class="flex items-center gap-2">
-					<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center">
-						<span class="text-white font-bold text-lg">R</span>
+					<div class="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center">
+						<img src={favicon} alt="Logo" class="w-full h-full object-cover" />
 					</div>
-					<span class="hidden sm:block text-lg font-bold">Rick<span class="text-accent-primary">Dev</span></span>
+					<span class="hidden sm:block text-lg font-bold">Rick<span class="text-accent-primary">Zin</span></span>
 				</a>
 
 				<!-- Desktop Navigation -->

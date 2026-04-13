@@ -1,22 +1,44 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { fly } from 'svelte/transition';
+	import { fly, fade } from 'svelte/transition';
 	import { db, type Project } from '$lib/firebaseConfig';
 	import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+	import rickPhoto from '$lib/assets/rick.jpg';
 
 	let projects = $state<Project[]>([]);
 	let loading = $state(true);
 
-	const techStack = [
-		{ name: 'SvelteKit', icon: 'S', color: '#ff3e00' },
-		{ name: 'TypeScript', icon: 'TS', color: '#3178c6' },
-		{ name: 'Node.js', icon: 'N', color: '#339933' },
-		{ name: 'PostgreSQL', icon: 'PG', color: '#336791' },
-		{ name: 'Firebase', icon: 'F', color: '#FFCA28' },
-		{ name: 'TailwindCSS', icon: 'TW', color: '#06b6d4' },
-		{ name: 'Git', icon: 'G', color: '#f05032' },
-		{ name: 'Docker', icon: 'D', color: '#2496ed' }
-	];
+	const skills = {
+		'Front-end': [
+			{ name: 'HTML5', color: '#E34F26' },
+			{ name: 'CSS3', color: '#1572B6' },
+			{ name: 'JavaScript', color: '#F7DF1E' },
+			{ name: 'TypeScript', color: '#3178C6' },
+			{ name: 'SvelteKit', color: '#FF3E00' },
+			{ name: 'TailwindCSS', color: '#06B6D4' },
+			{ name: 'React', color: '#61DAFB' },
+			{ name: 'Bootstrap', color: '#7952B3' }
+		],
+		'Back-end': [
+			{ name: 'Node.js', color: '#339933' },
+			{ name: 'Express', color: '#000000' },
+			{ name: 'PHP', color: '#777BB4' },
+			{ name: 'Lua', color: '#000080' },
+			{ name: 'Pawn', color: '#EBEBEB' },
+			{ name: 'API REST', color: '#009688' },
+			{ name: 'Firebase', color: '#FFCA28' }
+		],
+		'Banco de Dados': [
+			{ name: 'PostgreSQL', color: '#4169E1' },
+			{ name: 'MySQL', color: '#4479A1' },
+			{ name: 'MongoDB', color: '#47A248' },
+			{ name: 'SQLite', color: '#003B57' }
+		],
+		'Ferramentas': [
+			{ name: 'Git', color: '#F05032' },
+			{ name: 'Docker', color: '#2496ED' }
+		]
+	};
 
 	const services = [
 		{
@@ -97,16 +119,24 @@
 	</div>
 
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-		<div in:fly={{ y: 30, duration: 600, delay: 200 }}>
-			<div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent-primary/10 border border-accent-primary/30 mb-8">
-				<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-				<span class="text-sm text-slate-300">Disponível para novos projetos</span>
+		<div in:fly={{ y: 30, duration: 600, delay: 200 }} class="mb-8">
+			<div class="relative inline-block">
+				<div class="absolute inset-0 bg-accent-primary/20 rounded-full blur-2xl animate-pulse"></div>
+				<img 
+					src={rickPhoto} 
+					alt="Rick Gonzalez" 
+					class="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full object-cover border-2 border-accent-primary/30 shadow-2xl"
+				/>
+				<div class="absolute -bottom-2 -right-2 px-3 py-1 rounded-full bg-background-secondary border border-accent-primary/30 flex items-center gap-2">
+					<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+					<span class="text-[10px] sm:text-xs text-slate-300 font-medium">Online</span>
+				</div>
 			</div>
 		</div>
 
 		<h1 in:fly={{ y: 30, duration: 600, delay: 400 }} class="text-5xl sm:text-6xl lg:text-7xl font-extrabold mb-6">
-			<span class="text-slate-50">Olá, sou </span>
-			<span class="gradient-text">Rick Gonzalez</span>
+			<span class="text-slate-50">Olá, eu sou </span>
+			<span class="gradient-text">RickZin</span>
 		</h1>
 
 		<p in:fly={{ y: 30, duration: 600, delay: 600 }} class="text-xl sm:text-2xl text-slate-400 mb-8 max-w-2xl mx-auto">
@@ -129,26 +159,27 @@
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 		<div class="text-center mb-16">
 			<h2 class="text-3xl sm:text-4xl font-bold mb-4">
-				<span class="gradient-text">Tech Stack</span>
+				<span class="gradient-text">Habilidades</span>
 			</h2>
 			<p class="text-slate-400 text-lg max-w-xl mx-auto">
 				Tecnologias que utilizo para criar soluções modernas
 			</p>
 		</div>
 
-		<div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
-			{#each techStack as tech, i}
-				<div 
-					class="group card flex flex-col items-center justify-center p-6 cursor-default"
-					style="animation: float 3s ease-in-out infinite; animation-delay: {i * 0.2}s;"
-				>
-					<div 
-						class="w-14 h-14 rounded-xl flex items-center justify-center text-lg font-bold mb-3 transition-transform group-hover:scale-110"
-						style="background-color: {tech.color}20; color: {tech.color};"
-					>
-						{tech.icon}
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+			{#each Object.entries(skills) as [category, items]}
+				<div class="card bg-background-secondary/50 border-accent-primary/20">
+					<h3 class="text-xl font-bold mb-6 text-accent-primary">{category}</h3>
+					<div class="flex flex-wrap gap-3">
+						{#each items as item}
+							<div 
+								class="px-3 py-1.5 rounded-lg bg-background-tertiary border border-zinc-800 text-sm font-medium text-slate-300 hover:border-accent-primary/50 hover:text-white transition-all cursor-default"
+								style="border-left: 3px solid {item.color}"
+							>
+								{item.name}
+							</div>
+						{/each}
 					</div>
-					<span class="text-xs text-slate-400">{tech.name}</span>
 				</div>
 			{/each}
 		</div>

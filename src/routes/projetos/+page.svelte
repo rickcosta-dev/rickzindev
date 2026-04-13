@@ -63,8 +63,8 @@
 </script>
 
 <svelte:head>
-	<title>Projetos | Rick Gonzalez</title>
-	<meta name="description" content="Projetos desenvolvidos por Rick Gonzalez - Fullstack Developer" />
+	<title>Projetos | RickZin</title>
+	<meta name="description" content="Projetos desenvolvidos por RickZin - Fullstack Developer" />
 </svelte:head>
 
 <div class="min-h-screen py-24">
