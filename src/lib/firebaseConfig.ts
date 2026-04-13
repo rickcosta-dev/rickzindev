@@ -29,7 +29,23 @@ export interface Project {
   album: { url: string; type: 'image' | 'video' }[] | null;
   github_url: string | null;
   live_url: string | null;
+  featured: boolean | null;
+  featured_order: number | null;
   created_at: any;
+  updated_at?: any;
+}
+
+export interface Testimonial {
+  id: string;
+  name: string;
+  role: string | null;
+  company: string | null;
+  quote: string;
+  avatar_url: string | null;
+  linkedin_url: string | null;
+  approved: boolean | null;
+  created_at: any;
+  updated_at?: any;
 }
 
 export interface Contact {

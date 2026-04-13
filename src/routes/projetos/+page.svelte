@@ -212,7 +212,7 @@
 						{#if project.album && project.album.length > 0}
 							<button 
 								onclick={(e) => { e.preventDefault(); e.stopPropagation(); openAlbum(project.album); }}
-								class="absolute bottom-[160px] right-6 p-2 rounded-full bg-accent-primary text-white shadow-lg transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all z-20 hover:scale-110"
+								class="absolute bottom-[160px] right-6 p-2 rounded-full bg-accent-primary text-white shadow-lg transform translate-y-0 opacity-100 md:translate-y-4 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100 transition-all z-20 hover:scale-110"
 								title="Ver Álbum"
 							>
 								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -292,7 +292,8 @@
 		<!-- Close Button -->
 		<button 
 			onclick={closeAlbum}
-			class="absolute top-6 right-6 p-3 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all z-[110] bg-black/20"
+			class="absolute p-3 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all z-[110] bg-black/20"
+			style="top: calc(env(safe-area-inset-top) + 1.25rem); right: calc(env(safe-area-inset-right) + 1.25rem);"
 			aria-label="Fechar álbum"
 		>
 			<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -327,20 +328,20 @@
 
 		<!-- Media Container -->
 		<div class="w-full h-full flex items-center justify-center p-4 sm:p-12">
-			<div class="relative max-w-5xl w-full h-full flex flex-col items-center justify-center animate-fadeIn">
-				<div class="w-full max-h-[80vh] flex items-center justify-center rounded-2xl overflow-hidden shadow-2xl bg-zinc-900/50 border border-white/10">
+			<div class="relative w-full max-w-[95vw] sm:max-w-5xl max-h-[85vh] flex flex-col items-center justify-center animate-fadeIn">
+				<div class="w-full max-h-[75vh] flex items-center justify-center rounded-2xl overflow-hidden shadow-2xl bg-zinc-900/50 border border-white/10">
 					{#if selectedAlbum[currentAlbumIndex].type === 'image'}
 						<img 
 							src={selectedAlbum[currentAlbumIndex].url} 
 							alt="Project media {currentAlbumIndex + 1}" 
-							class="max-h-[80vh] w-auto object-contain"
+							class="max-h-[75vh] w-auto object-contain"
 						/>
 					{:else}
 						<video 
 							src={selectedAlbum[currentAlbumIndex].url} 
 							controls 
 							autoplay
-							class="max-h-[80vh] w-full aspect-video bg-black"
+							class="max-h-[75vh] w-full aspect-video bg-black"
 						>
 							<track kind="captions" />
 						</video>

@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { fly, fade } from 'svelte/transition';
-	import { db, type Project } from '$lib/firebaseConfig';
-	import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+	import { db, type Project, type Testimonial } from '$lib/firebaseConfig';
+	import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 	import rickPhoto from '$lib/assets/rick.jpg';
 
 	let projects = $state<Project[]>([]);
 	let loading = $state(true);
+	let testimonials = $state<Testimonial[]>([]);
+	let testimonialsLoading = $state(true);
 	let selectedAlbum = $state<{ url: string; type: 'image' | 'video' }[] | null>(null);
 	let currentAlbumIndex = $state(0);
 
@@ -56,6 +58,13 @@
 		if (e.target === e.currentTarget) {
 			closeAlbum();
 		}
+	}
+
+	function getInitials(fullName: string) {
+		const parts = fullName.trim().split(/\s+/).filter(Boolean);
+		const first = parts[0]?.[0] ?? '';
+		const last = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? '' : '';
+		return (first + last).toUpperCase();
 	}
 
 	const skills = {
@@ -108,36 +117,46 @@
 		}
 	];
 
-	const testimonials = [
-		{
-			name: 'Carlos Silva',
-			company: 'TechCorp',
-			quote: 'Excelente trabalho! Entregou o projeto antes do prazo com qualidade excepcional.',
-			avatar: 'CS'
-		},
-		{
-			name: 'Maria Santos',
-			company: 'StartupXYZ',
-			quote: 'Profissional muito competente. Recomendamos para qualquer projeto fullstack.',
-			avatar: 'MS'
-		},
-		{
-			name: 'João Oliveira',
-			company: 'DevHub',
-			quote: 'Código limpo, bem estruturado e documentado. Uma parceria de sucesso.',
-			avatar: 'JO'
-		}
-	];
-
 	onMount(() => {
+		const toDateValue = (value: any) => {
+			if (!value) return null;
+			if (value instanceof Date) return value;
+			if (typeof value?.toDate === 'function') return value.toDate();
+			const d = new Date(value);
+			return Number.isNaN(d.getTime()) ? null : d;
+		};
+
 		const loadProjects = async () => {
 			try {
-				const q = query(collection(db, 'projects'), orderBy('created_at', 'desc'), limit(3));
-				const querySnapshot = await getDocs(q);
-				projects = querySnapshot.docs.map(doc => ({
-					id: doc.id,
-					...doc.data()
-				})) as Project[];
+				let data: Project[] = [];
+
+				try {
+					const featuredQuery = query(collection(db, 'projects'), where('featured', '==', true), limit(50));
+					const featuredSnap = await getDocs(featuredQuery);
+					const featured = featuredSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Project[];
+
+					featured.sort((a, b) => {
+						const ao = a.featured_order ?? Number.POSITIVE_INFINITY;
+						const bo = b.featured_order ?? Number.POSITIVE_INFINITY;
+						if (ao !== bo) return ao - bo;
+
+						const ad = toDateValue(a.created_at)?.getTime() ?? 0;
+						const bd = toDateValue(b.created_at)?.getTime() ?? 0;
+						return bd - ad;
+					});
+
+					data = featured.slice(0, 3);
+				} catch {
+					data = [];
+				}
+
+				if (!data || data.length === 0) {
+					const recentQuery = query(collection(db, 'projects'), orderBy('created_at', 'desc'), limit(3));
+					const recentSnap = await getDocs(recentQuery);
+					data = recentSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Project[];
+				}
+
+				projects = data;
 			} catch (error) {
 				console.error('Error loading projects:', error);
 			} finally {
@@ -145,7 +164,28 @@
 			}
 		};
 
+		const loadTestimonials = async () => {
+			try {
+				const approvedQuery = query(collection(db, 'testimonials'), where('approved', '==', true), limit(50));
+				const snap = await getDocs(approvedQuery);
+				const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Testimonial[];
+
+				data.sort((a, b) => {
+					const ad = toDateValue(a.created_at)?.getTime() ?? 0;
+					const bd = toDateValue(b.created_at)?.getTime() ?? 0;
+					return bd - ad;
+				});
+
+				testimonials = data.slice(0, 3);
+			} catch (error) {
+				console.error('Error loading testimonials:', error);
+			} finally {
+				testimonialsLoading = false;
+			}
+		};
+
 		loadProjects();
+		loadTestimonials();
 
 		const observer = new IntersectionObserver((entries) => {
 			entries.forEach(entry => {
@@ -219,7 +259,8 @@
 		<!-- Close Button -->
 		<button 
 			onclick={closeAlbum}
-			class="absolute top-6 right-6 p-3 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all z-[110] bg-black/20"
+			class="absolute p-3 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all z-[110] bg-black/20"
+			style="top: calc(env(safe-area-inset-top) + 1.25rem); right: calc(env(safe-area-inset-right) + 1.25rem);"
 			aria-label="Fechar álbum"
 		>
 			<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -254,20 +295,20 @@
 
 		<!-- Media Container -->
 		<div class="w-full h-full flex items-center justify-center p-4 sm:p-12">
-			<div class="relative max-w-5xl w-full h-full flex flex-col items-center justify-center animate-fadeIn">
-				<div class="w-full max-h-[80vh] flex items-center justify-center rounded-2xl overflow-hidden shadow-2xl bg-zinc-900/50 border border-white/10">
+			<div class="relative w-full max-w-[95vw] sm:max-w-5xl max-h-[85vh] flex flex-col items-center justify-center animate-fadeIn">
+				<div class="w-full max-h-[75vh] flex items-center justify-center rounded-2xl overflow-hidden shadow-2xl bg-zinc-900/50 border border-white/10">
 					{#if selectedAlbum[currentAlbumIndex].type === 'image'}
 						<img 
 							src={selectedAlbum[currentAlbumIndex].url} 
 							alt="Project media {currentAlbumIndex + 1}" 
-							class="max-h-[80vh] w-auto object-contain"
+							class="max-h-[75vh] w-auto object-contain"
 						/>
 					{:else}
 						<video 
 							src={selectedAlbum[currentAlbumIndex].url} 
 							controls 
 							autoplay
-							class="max-h-[80vh] w-full aspect-video bg-black"
+							class="max-h-[75vh] w-full aspect-video bg-black"
 						>
 							<track kind="captions" />
 						</video>
@@ -367,7 +408,7 @@
 						{#if project.album && project.album.length > 0}
 							<button 
 								onclick={(e) => { e.preventDefault(); e.stopPropagation(); openAlbum(project.album); }}
-								class="absolute bottom-32 right-6 p-2 rounded-full bg-accent-primary text-white shadow-lg transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all z-20 hover:scale-110"
+								class="absolute bottom-32 right-6 p-2 rounded-full bg-accent-primary text-white shadow-lg transform translate-y-0 opacity-100 md:translate-y-4 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100 transition-all z-20 hover:scale-110"
 								title="Ver Álbum"
 							>
 								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -446,25 +487,58 @@
 			</p>
 		</div>
 
-		<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-			{#each testimonials as testimonial, i}
-				<div class="card">
-					<svg class="w-8 h-8 text-accent-primary/30 mb-4" fill="currentColor" viewBox="0 0 24 24">
-						<path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849v4.059l3.016 3.063L14.017 21zM12 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849v4.059l3.016 3.063L12 21z"/>
-					</svg>
-					<p class="text-slate-300 mb-6 italic">"{testimonial.quote}"</p>
-					<div class="flex items-center gap-3">
-						<div class="w-10 h-10 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center text-sm font-bold">
-							{testimonial.avatar}
-						</div>
-						<div>
-							<p class="font-medium text-sm">{testimonial.name}</p>
-							<p class="text-slate-500 text-xs">{testimonial.company}</p>
+		{#if testimonialsLoading}
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+				{#each [1, 2, 3] as _}
+					<div class="card">
+						<div class="w-10 h-10 rounded-full bg-background-tertiary animate-pulse mb-6"></div>
+						<div class="h-4 bg-background-tertiary rounded animate-pulse mb-2"></div>
+						<div class="h-4 bg-background-tertiary rounded animate-pulse mb-2 w-5/6"></div>
+						<div class="h-4 bg-background-tertiary rounded animate-pulse w-2/3"></div>
+					</div>
+				{/each}
+			</div>
+		{:else if testimonials.length > 0}
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+				{#each testimonials as testimonial, i}
+					<div class="card">
+						<svg class="w-8 h-8 text-accent-primary/30 mb-4" fill="currentColor" viewBox="0 0 24 24">
+							<path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849v4.059l3.016 3.063L14.017 21zM12 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849v4.059l3.016 3.063L12 21z"/>
+						</svg>
+						<p class="text-slate-300 mb-6 italic">"{testimonial.quote}"</p>
+						<div class="flex items-center gap-3">
+							{#if testimonial.avatar_url}
+								<img
+									src={testimonial.avatar_url}
+									alt={testimonial.name}
+									class="w-10 h-10 rounded-full object-cover border border-white/10"
+								/>
+							{:else}
+								<div class="w-10 h-10 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center text-sm font-bold">
+									{getInitials(testimonial.name)}
+								</div>
+							{/if}
+							<div class="min-w-0">
+								{#if testimonial.linkedin_url}
+									<a href={testimonial.linkedin_url} target="_blank" rel="noopener" class="font-medium text-sm hover:text-accent-primary transition-colors truncate block">
+										{testimonial.name}
+									</a>
+								{:else}
+									<p class="font-medium text-sm truncate">{testimonial.name}</p>
+								{/if}
+								<p class="text-slate-500 text-xs truncate">
+									{testimonial.role || ''}{testimonial.company ? ` • ${testimonial.company}` : ''}
+								</p>
+							</div>
 						</div>
 					</div>
-				</div>
-			{/each}
-		</div>
+				{/each}
+			</div>
+		{:else}
+			<div class="text-center py-8 text-slate-400">
+				Nenhum depoimento disponível ainda.
+			</div>
+		{/if}
 	</div>
 </section>
 

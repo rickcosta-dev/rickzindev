@@ -2,6 +2,7 @@
 	import { fly } from 'svelte/transition';
 	import { db } from '$lib/firebaseConfig';
 	import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+	import { lang, t } from '$lib/i18n';
 
 	let name = $state('');
 	let email = $state('');
@@ -28,7 +29,7 @@
 			email = '';
 			message = '';
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Erro ao enviar mensagem';
+			error = err instanceof Error ? err.message : t('contact.sendError', $lang);
 		} finally {
 			loading = false;
 		}
@@ -36,8 +37,8 @@
 </script>
 
 <svelte:head>
-	<title>Contato | RickZin</title>
-	<meta name="description" content="Entre em contato com RickZin - Fullstack Developer" />
+	<title>{t('contact.pageTitle', $lang)} | RickZin</title>
+	<meta name="description" content={t('contact.pageDescription', $lang)} />
 </svelte:head>
 
 <div class="min-h-screen py-24">
@@ -45,17 +46,17 @@
 		<!-- Header -->
 		<div class="text-center mb-12">
 			<h1 class="text-4xl sm:text-5xl font-bold mb-4">
-				Fale <span class="gradient-text">Comigo</span>
+				{t('contact.headerTitleA', $lang)} <span class="gradient-text">{t('contact.headerTitleB', $lang)}</span>
 			</h1>
 			<p class="text-slate-400 text-lg">
-				Tem um projeto em mente? Vamos conversar.
+				{t('contact.headerSubtitle', $lang)}
 			</p>
 		</div>
 
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
 			<!-- Contact Info -->
 			<div in:fly={{ x: -20, duration: 400 }}>
-				<h2 class="text-2xl font-bold mb-6">Informações de Contato</h2>
+				<h2 class="text-2xl font-bold mb-6">{t('contact.infoTitle', $lang)}</h2>
 				
 				<div class="space-y-6">
 					<div class="flex items-start gap-4">
@@ -114,10 +115,10 @@
 				</div>
 
 				<div class="mt-8 p-6 bg-background-secondary rounded-xl border border-border-color">
-					<h3 class="font-semibold mb-2">Disponibilidade</h3>
+					<h3 class="font-semibold mb-2">{t('contact.availabilityTitle', $lang)}</h3>
 					<p class="text-slate-400 text-sm">
-						Estoy disponible para proyectos freelance y oportunidades full-time. 
-						Tiempo de respuesta: 24-48 horas.
+						{t('contact.availabilityText', $lang)}
+						{t('contact.responseTime', $lang)}
 					</p>
 				</div>
 			</div>
@@ -131,13 +132,13 @@
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
 							</svg>
 						</div>
-						<h3 class="text-xl font-bold mb-2">Mensagem Enviada!</h3>
-						<p class="text-slate-400 mb-6">Obrigado pelo contato. Responderei em breve.</p>
+						<h3 class="text-xl font-bold mb-2">{t('contact.successTitle', $lang)}</h3>
+						<p class="text-slate-400 mb-6">{t('contact.successBody', $lang)}</p>
 						<button 
 							onclick={() => success = false}
 							class="btn-outline"
 						>
-							Enviar nova mensagem
+							{t('contact.sendAnother', $lang)}
 						</button>
 					</div>
 				{:else}
@@ -149,38 +150,38 @@
 						{/if}
 
 						<div class="mb-4">
-							<label for="name" class="block text-sm font-medium mb-2">Nome</label>
+							<label for="name" class="block text-sm font-medium mb-2">{t('contact.labelName', $lang)}</label>
 							<input
 								type="text"
 								id="name"
 								bind:value={name}
 								required
 								class="input"
-								placeholder="Seu nome"
+								placeholder={t('contact.placeholderName', $lang)}
 							/>
 						</div>
 
 						<div class="mb-4">
-							<label for="email" class="block text-sm font-medium mb-2">Email</label>
+							<label for="email" class="block text-sm font-medium mb-2">{t('contact.labelEmail', $lang)}</label>
 							<input
 								type="email"
 								id="email"
 								bind:value={email}
 								required
 								class="input"
-								placeholder="seu@email.com"
+								placeholder={t('contact.placeholderEmail', $lang)}
 							/>
 						</div>
 
 						<div class="mb-6">
-							<label for="message" class="block text-sm font-medium mb-2">Mensagem</label>
+							<label for="message" class="block text-sm font-medium mb-2">{t('contact.labelMessage', $lang)}</label>
 							<textarea
 								id="message"
 								bind:value={message}
 								required
 								rows="5"
 								class="input resize-none"
-								placeholder="Conte-me sobre seu projeto..."
+								placeholder={t('contact.placeholderMessage', $lang)}
 							></textarea>
 						</div>
 
@@ -195,10 +196,10 @@
 										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 									</svg>
-									Enviando...
+									{t('contact.sending', $lang)}
 								</span>
 							{:else}
-								Enviar Mensagem
+								{t('contact.sendMessage', $lang)}
 							{/if}
 						</button>
 					</form>
