@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
-	import { supabase, type Project } from '$lib/supabaseClient';
+	import { db, type Project } from '$lib/firebaseConfig';
+	import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 
 	let projects = $state<Project[]>([]);
 	let loading = $state(true);
@@ -11,7 +12,7 @@
 		{ name: 'TypeScript', icon: 'TS', color: '#3178c6' },
 		{ name: 'Node.js', icon: 'N', color: '#339933' },
 		{ name: 'PostgreSQL', icon: 'PG', color: '#336791' },
-		{ name: 'Supabase', icon: 'S', color: '#3ecf8e' },
+		{ name: 'Firebase', icon: 'F', color: '#FFCA28' },
 		{ name: 'TailwindCSS', icon: 'TW', color: '#06b6d4' },
 		{ name: 'Git', icon: 'G', color: '#f05032' },
 		{ name: 'Docker', icon: 'D', color: '#2496ed' }
@@ -58,16 +59,18 @@
 
 	onMount(() => {
 		const loadProjects = async () => {
-			const { data } = await supabase
-				.from('projects')
-				.select('*')
-				.order('created_at', { ascending: false })
-				.limit(3);
-			
-			if (data) {
-				projects = data;
+			try {
+				const q = query(collection(db, 'projects'), orderBy('created_at', 'desc'), limit(3));
+				const querySnapshot = await getDocs(q);
+				projects = querySnapshot.docs.map(doc => ({
+					id: doc.id,
+					...doc.data()
+				})) as Project[];
+			} catch (error) {
+				console.error('Error loading projects:', error);
+			} finally {
+				loading = false;
 			}
-			loading = false;
 		};
 
 		loadProjects();

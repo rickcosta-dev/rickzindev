@@ -2,7 +2,19 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { fade, fly } from 'svelte/transition';
-	import { supabase, type Project, type Contact } from '$lib/supabaseClient';
+	import { db, auth, type Project, type Contact } from '$lib/firebaseConfig';
+	import { 
+		collection, 
+		query, 
+		orderBy, 
+		getDocs, 
+		addDoc, 
+		updateDoc, 
+		deleteDoc, 
+		doc, 
+		serverTimestamp 
+	} from 'firebase/firestore';
+	import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
 
 	let projects = $state<Project[]>([]);
 	let contacts = $state<Contact[]>([]);
@@ -20,33 +32,40 @@
 		live_url: ''
 	});
 
-	onMount(async () => {
-		const { data: { user } } = await supabase.auth.getUser();
-		
-		if (!user) {
-			goto('/login');
-			return;
-		}
+	onMount(() => {
+		const unsubscribe = onAuthStateChanged(auth, (user) => {
+			if (!user) {
+				goto('/login');
+			} else {
+				loadData();
+			}
+		});
 
-		await loadData();
+		return () => unsubscribe();
 	});
 
 	async function loadData() {
 		loading = true;
-		
-		const [projectsRes, contactsRes] = await Promise.all([
-			supabase.from('projects').select('*').order('created_at', { ascending: false }),
-			supabase.from('contacts').select('*').order('created_at', { ascending: false })
-		]);
+		try {
+			const projectsQuery = query(collection(db, 'projects'), orderBy('created_at', 'desc'));
+			const contactsQuery = query(collection(db, 'contacts'), orderBy('created_at', 'desc'));
 
-		if (projectsRes.data) projects = projectsRes.data;
-		if (contactsRes.data) contacts = contactsRes.data;
-		
-		loading = false;
+			const [projectsSnap, contactsSnap] = await Promise.all([
+				getDocs(projectsQuery),
+				getDocs(contactsQuery)
+			]);
+
+			projects = projectsSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Project[];
+			contacts = contactsSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Contact[];
+		} catch (error) {
+			console.error('Error loading dashboard data:', error);
+		} finally {
+			loading = false;
+		}
 	}
 
 	async function signOut() {
-		await supabase.auth.signOut();
+		await firebaseSignOut(auth);
 		goto('/');
 	}
 
@@ -92,44 +111,45 @@
 			tech: techArray,
 			image_url: projectForm.image_url || null,
 			github_url: projectForm.github_url || null,
-			live_url: projectForm.live_url || null
+			live_url: projectForm.live_url || null,
+			updated_at: serverTimestamp()
 		};
 
-		if (editingProject) {
-			await supabase
-				.from('projects')
-				.update(projectData)
-				.eq('id', editingProject.id);
-		} else {
-			await supabase
-				.from('projects')
-				.insert([projectData]);
+		try {
+			if (editingProject) {
+				const projectRef = doc(db, 'projects', editingProject.id);
+				await updateDoc(projectRef, projectData);
+			} else {
+				await addDoc(collection(db, 'projects'), {
+					...projectData,
+					created_at: serverTimestamp()
+				});
+			}
+			closeModal();
+			await loadData();
+		} catch (error) {
+			console.error('Error saving project:', error);
 		}
-
-		closeModal();
-		await loadData();
 	}
 
 	async function deleteProject(id: string) {
 		if (!confirm('Tem certeza que deseja excluir este projeto?')) return;
-		
-		await supabase
-			.from('projects')
-			.delete()
-			.eq('id', id);
-		
-		await loadData();
+		try {
+			await deleteDoc(doc(db, 'projects', id));
+			await loadData();
+		} catch (error) {
+			console.error('Error deleting project:', error);
+		}
 	}
 
 	async function deleteContact(id: string) {
 		if (!confirm('Tem certeza que deseja excluir esta mensagem?')) return;
-		
-		await supabase
-			.from('contacts')
-			.delete()
-			.eq('id', id);
-		
-		await loadData();
+		try {
+			await deleteDoc(doc(db, 'contacts', id));
+			await loadData();
+		} catch (error) {
+			console.error('Error deleting contact:', error);
+		}
 	}
 </script>
 

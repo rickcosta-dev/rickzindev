@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { fly } from 'svelte/transition';
-	import { supabase } from '$lib/supabaseClient';
+	import { auth } from '$lib/firebaseConfig';
+	import { signInWithEmailAndPassword } from 'firebase/auth';
 
 	let email = $state('');
 	let password = $state('');
@@ -14,16 +15,8 @@
 		error = '';
 
 		try {
-			const { data, error: authError } = await supabase.auth.signInWithPassword({
-				email,
-				password
-			});
-
-			if (authError) {
-				throw new Error(authError.message);
-			}
-
-			if (data.user) {
+			const userCredential = await signInWithEmailAndPassword(auth, email, password);
+			if (userCredential.user) {
 				goto('/dashboard');
 			}
 		} catch (err) {

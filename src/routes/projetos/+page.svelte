@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
-	import { supabase, type Project } from '$lib/supabaseClient';
+	import { db, type Project } from '$lib/firebaseConfig';
+	import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 
 	let projects = $state<Project[]>([]);
 	let filteredProjects = $state<Project[]>([]);
@@ -11,17 +12,19 @@
 	let allTechs = $state<string[]>([]);
 
 	onMount(async () => {
-		const { data } = await supabase
-			.from('projects')
-			.select('*')
-			.order('created_at', { ascending: false });
-		
-		if (data) {
+		try {
+			const q = query(collection(db, 'projects'), orderBy('created_at', 'desc'));
+			const querySnapshot = await getDocs(q);
+			const data = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Project[];
+			
 			projects = data;
 			filteredProjects = data;
 			allTechs = [...new Set(data.flatMap(p => p.tech || []))];
+		} catch (error) {
+			console.error('Error loading projects:', error);
+		} finally {
+			loading = false;
 		}
-		loading = false;
 	});
 
 	function filterProjects() {
