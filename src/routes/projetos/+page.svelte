@@ -17,22 +17,32 @@
 		if (album && album.length > 0) {
 			selectedAlbum = album;
 			currentAlbumIndex = 0;
+			document.documentElement.style.overflow = 'hidden';
 			document.body.style.overflow = 'hidden';
 		}
 	}
 
 	function closeAlbum() {
 		selectedAlbum = null;
-		document.body.style.overflow = 'auto';
+		document.documentElement.style.overflow = '';
+		document.body.style.overflow = '';
 	}
 
-	function nextAlbumItem() {
+	function nextAlbumItem(e?: Event) {
+		if (e) {
+			e.preventDefault();
+			e.stopPropagation();
+		}
 		if (selectedAlbum) {
 			currentAlbumIndex = (currentAlbumIndex + 1) % selectedAlbum.length;
 		}
 	}
 
-	function prevAlbumItem() {
+	function prevAlbumItem(e?: Event) {
+		if (e) {
+			e.preventDefault();
+			e.stopPropagation();
+		}
 		if (selectedAlbum) {
 			currentAlbumIndex = (currentAlbumIndex - 1 + selectedAlbum.length) % selectedAlbum.length;
 		}
@@ -43,6 +53,12 @@
 		if (e.key === 'Escape') closeAlbum();
 		if (e.key === 'ArrowRight') nextAlbumItem();
 		if (e.key === 'ArrowLeft') prevAlbumItem();
+	}
+
+	function handleAlbumOverlayClick(e: MouseEvent) {
+		if (e.target === e.currentTarget) {
+			closeAlbum();
+		}
 	}
 
 	onMount(async () => {
@@ -264,13 +280,18 @@
 </div>
 
 {#if selectedAlbum}
-	<div 
-		class="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-sm"
-		transition:fade={{ duration: 200 }}
-	>
+	<div class="fixed inset-0 z-[100]">
+		<button
+			type="button"
+			class="absolute inset-0 bg-black/95 backdrop-blur-sm"
+			aria-label="Fechar álbum"
+			onclick={closeAlbum}
+		></button>
+
+		<div class="absolute inset-0 flex items-center justify-center">
 		<!-- Close Button -->
 		<button 
-			onclick={(e) => { e.stopPropagation(); closeAlbum(); }}
+			onclick={closeAlbum}
 			class="absolute top-6 right-6 p-3 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all z-[110] bg-black/20"
 			aria-label="Fechar álbum"
 		>
@@ -280,71 +301,74 @@
 		</button>
 
 		<!-- Navigation Buttons -->
-		{#if selectedAlbum.length > 1}
-			<button 
-				onclick={(e) => { e.stopPropagation(); prevAlbumItem(); }}
-				class="absolute left-6 top-1/2 -translate-y-1/2 p-4 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all z-[110] bg-black/20"
-				aria-label="Anterior"
-			>
-				<svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-				</svg>
-			</button>
+		<button 
+			type="button"
+			onclick={prevAlbumItem}
+			disabled={selectedAlbum.length <= 1}
+			class="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 p-2 sm:p-4 text-white rounded-full transition-all z-[110] bg-black/60 shadow-lg backdrop-blur-sm hover:bg-white/20 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:bg-black/60"
+			aria-label="Anterior"
+		>
+			<svg class="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+			</svg>
+		</button>
 
-			<button 
-				onclick={(e) => { e.stopPropagation(); nextAlbumItem(); }}
-				class="absolute right-6 top-1/2 -translate-y-1/2 p-4 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all z-[110] bg-black/20"
-				aria-label="Próximo"
-			>
-				<svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-				</svg>
-			</button>
-		{/if}
+		<button 
+			type="button"
+			onclick={nextAlbumItem}
+			disabled={selectedAlbum.length <= 1}
+			class="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 p-2 sm:p-4 text-white rounded-full transition-all z-[110] bg-black/60 shadow-lg backdrop-blur-sm hover:bg-white/20 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:bg-black/60"
+			aria-label="Próximo"
+		>
+			<svg class="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+			</svg>
+		</button>
 
 		<!-- Media Container -->
 		<div class="w-full h-full flex items-center justify-center p-4 sm:p-12">
-			{#key currentAlbumIndex}
-				<div 
-					class="relative max-w-5xl w-full h-full flex flex-col items-center justify-center"
-					in:fly={{ x: 20, duration: 300 }}
-					out:fly={{ x: -20, duration: 300 }}
-				>
-					<div class="w-full max-h-[80vh] flex items-center justify-center rounded-2xl overflow-hidden shadow-2xl bg-zinc-900/50 border border-white/10">
-						{#if selectedAlbum[currentAlbumIndex].type === 'image'}
-							<img 
-								src={selectedAlbum[currentAlbumIndex].url} 
-								alt="Project media {currentAlbumIndex + 1}" 
-								class="max-h-[80vh] w-auto object-contain"
-							/>
-						{:else}
-							<video 
-								src={selectedAlbum[currentAlbumIndex].url} 
-								controls 
-								autoplay
-								class="max-h-[80vh] w-full aspect-video bg-black"
-							>
-								<track kind="captions" />
-							</video>
-						{/if}
-					</div>
-
-					<!-- Counter -->
-					{#if selectedAlbum.length > 1}
-						<div class="mt-6 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-white/80 text-sm font-medium backdrop-blur-md">
-							{currentAlbumIndex + 1} / {selectedAlbum.length}
-						</div>
+			<div class="relative max-w-5xl w-full h-full flex flex-col items-center justify-center animate-fadeIn">
+				<div class="w-full max-h-[80vh] flex items-center justify-center rounded-2xl overflow-hidden shadow-2xl bg-zinc-900/50 border border-white/10">
+					{#if selectedAlbum[currentAlbumIndex].type === 'image'}
+						<img 
+							src={selectedAlbum[currentAlbumIndex].url} 
+							alt="Project media {currentAlbumIndex + 1}" 
+							class="max-h-[80vh] w-auto object-contain"
+						/>
+					{:else}
+						<video 
+							src={selectedAlbum[currentAlbumIndex].url} 
+							controls 
+							autoplay
+							class="max-h-[80vh] w-full aspect-video bg-black"
+						>
+							<track kind="captions" />
+						</video>
 					{/if}
 				</div>
-			{/key}
+
+				<!-- Counter -->
+				<div class="mt-6 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-white/80 text-sm font-medium backdrop-blur-md">
+					{currentAlbumIndex + 1} / {selectedAlbum.length}
+				</div>
+			</div>
+		</div>
 		</div>
 	</div>
 {/if}
 
 <style>
+	@keyframes fadeIn {
+		from { opacity: 0; transform: scale(0.98); }
+		to { opacity: 1; transform: scale(1); }
+	}
+	:global(.animate-fadeIn) {
+		animation: fadeIn 0.3s ease-out forwards;
+	}
 	.line-clamp-2 {
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
+		line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
 	}
