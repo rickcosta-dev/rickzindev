@@ -1,11 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { fade, fly } from 'svelte/transition';
+	import { fly } from 'svelte/transition';
 	import { supabase, type Project } from '$lib/supabaseClient';
 
 	let projects = $state<Project[]>([]);
 	let loading = $state(true);
-	let visibleSections = $state<Set<string>>(new Set());
 
 	const techStack = [
 		{ name: 'SvelteKit', icon: 'S', color: '#ff3e00' },
@@ -57,17 +56,21 @@
 		}
 	];
 
-	onMount(async () => {
-		const { data } = await supabase
-			.from('projects')
-			.select('*')
-			.order('created_at', { ascending: false })
-			.limit(3);
-		
-		if (data) {
-			projects = data;
-		}
-		loading = false;
+	onMount(() => {
+		const loadProjects = async () => {
+			const { data } = await supabase
+				.from('projects')
+				.select('*')
+				.order('created_at', { ascending: false })
+				.limit(3);
+			
+			if (data) {
+				projects = data;
+			}
+			loading = false;
+		};
+
+		loadProjects();
 
 		const observer = new IntersectionObserver((entries) => {
 			entries.forEach(entry => {
@@ -308,6 +311,7 @@
 	.line-clamp-2 {
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
+		line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
 	}
