@@ -3,20 +3,24 @@
 	import { fly } from 'svelte/transition';
 	import { db, type Project } from '$lib/firebaseConfig';
 	import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+	import AlbumViewer from '$lib/components/AlbumViewer.svelte';
 
-	let projects = $state<Project[]>([]);
+	const PAGE_SIZE = 9;
+
+	let allProjects = $state<Project[]>([]);
 	let filteredProjects = $state<Project[]>([]);
 	let loading = $state(true);
 	let searchQuery = $state('');
 	let selectedTechs = $state<string[]>([]);
 	let allTechs = $state<string[]>([]);
 	let selectedAlbum = $state<{ url: string; type: 'image' | 'video' }[] | null>(null);
-	let currentAlbumIndex = $state(0);
+	let page = $state(1);
+
+	let visibleProjects = $derived(filteredProjects.slice(0, page * PAGE_SIZE));
 
 	function openAlbum(album: { url: string; type: 'image' | 'video' }[] | null) {
 		if (album && album.length > 0) {
 			selectedAlbum = album;
-			currentAlbumIndex = 0;
 			document.documentElement.style.overflow = 'hidden';
 			document.body.style.overflow = 'hidden';
 		}
@@ -28,100 +32,70 @@
 		document.body.style.overflow = '';
 	}
 
-	function nextAlbumItem(e?: Event) {
-		if (e) {
-			e.preventDefault();
-			e.stopPropagation();
-		}
-		if (selectedAlbum) {
-			currentAlbumIndex = (currentAlbumIndex + 1) % selectedAlbum.length;
-		}
-	}
-
-	function prevAlbumItem(e?: Event) {
-		if (e) {
-			e.preventDefault();
-			e.stopPropagation();
-		}
-		if (selectedAlbum) {
-			currentAlbumIndex = (currentAlbumIndex - 1 + selectedAlbum.length) % selectedAlbum.length;
-		}
-	}
-
-	function handleKeydown(e: KeyboardEvent) {
-		if (!selectedAlbum) return;
-		if (e.key === 'Escape') closeAlbum();
-		if (e.key === 'ArrowRight') nextAlbumItem();
-		if (e.key === 'ArrowLeft') prevAlbumItem();
-	}
-
-	function handleAlbumOverlayClick(e: MouseEvent) {
-		if (e.target === e.currentTarget) {
-			closeAlbum();
-		}
-	}
-
 	onMount(async () => {
 		try {
 			const q = query(collection(db, 'projects'), orderBy('created_at', 'desc'));
-			const querySnapshot = await getDocs(q);
-			const data = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Project[];
-			
-			projects = data;
+			const snap = await getDocs(q);
+			const data = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Project[];
+
+			allProjects = data;
 			filteredProjects = data;
-			allTechs = [...new Set(data.flatMap(p => p.tech || []))];
-		} catch (error) {
-			console.error('Error loading projects:', error);
+			allTechs = [...new Set(data.flatMap((p) => p.tech || []))];
+		} catch (err) {
+			console.error('Error loading projects:', err);
 		} finally {
 			loading = false;
 		}
 	});
 
 	function filterProjects() {
-		filteredProjects = projects.filter(project => {
-			const matchesSearch = !searchQuery || 
+		page = 1;
+		filteredProjects = allProjects.filter((project) => {
+			const matchesSearch =
+				!searchQuery ||
 				project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
 				project.description?.toLowerCase().includes(searchQuery.toLowerCase());
-			
-			const matchesTech = selectedTechs.length === 0 || 
-				selectedTechs.some(tech => project.tech?.includes(tech));
-			
+
+			const matchesTech =
+				selectedTechs.length === 0 || selectedTechs.some((tech) => project.tech?.includes(tech));
+
 			return matchesSearch && matchesTech;
 		});
 	}
 
 	function toggleTech(tech: string) {
-		if (selectedTechs.includes(tech)) {
-			selectedTechs = selectedTechs.filter(t => t !== tech);
-		} else {
-			selectedTechs = [...selectedTechs, tech];
-		}
+		selectedTechs = selectedTechs.includes(tech)
+			? selectedTechs.filter((t) => t !== tech)
+			: [...selectedTechs, tech];
 		filterProjects();
 	}
 
 	function clearFilters() {
 		searchQuery = '';
 		selectedTechs = [];
-		filteredProjects = projects;
+		filteredProjects = allProjects;
+		page = 1;
+	}
+
+	function loadMore() {
+		page++;
 	}
 
 	$effect(() => {
-		if (searchQuery) {
-			filterProjects();
-		}
+		if (searchQuery !== undefined) filterProjects();
 	});
 </script>
-
-<svelte:window onkeydown={handleKeydown} />
 
 <svelte:head>
 	<title>Projetos | RickZin</title>
 	<meta name="description" content="Projetos desenvolvidos por RickZin - Fullstack Developer" />
+	<meta property="og:title" content="Projetos | RickZin" />
+	<meta property="og:description" content="Projetos desenvolvidos por RickZin - Fullstack Developer" />
+	<meta property="og:type" content="website" />
 </svelte:head>
 
 <div class="min-h-screen py-24">
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-		<!-- Header -->
 		<div class="mb-12">
 			<h1 class="text-4xl sm:text-5xl font-bold mb-4">
 				Meus <span class="gradient-text">Projetos</span>
@@ -131,9 +105,7 @@
 			</p>
 		</div>
 
-		<!-- Filters -->
 		<div class="flex flex-col lg:flex-row gap-4 mb-8">
-			<!-- Search -->
 			<div class="relative flex-1">
 				<svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -147,7 +119,6 @@
 				/>
 			</div>
 
-			<!-- Tech Filters -->
 			<div class="flex flex-wrap gap-2">
 				{#each allTechs as tech}
 					<button
@@ -168,7 +139,6 @@
 			</div>
 		</div>
 
-		<!-- Projects Grid -->
 		{#if loading}
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 				{#each [1, 2, 3, 4, 5, 6] as _}
@@ -185,17 +155,18 @@
 			</div>
 		{:else if filteredProjects.length > 0}
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-				{#each filteredProjects as project, i}
-					<div 
+				{#each visibleProjects as project, i}
+					<div
 						class="card group relative"
 						in:fly={{ y: 20, duration: 400, delay: i * 50 }}
 					>
 						<a href="/projetos/{project.id}" class="block">
 							<div class="relative overflow-hidden rounded-lg mb-4">
 								{#if project.image_url}
-									<img 
-										src={project.image_url} 
+									<img
+										src={project.image_url}
 										alt={project.title}
+										loading="lazy"
 										class="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
 									/>
 								{:else}
@@ -210,7 +181,7 @@
 						</a>
 
 						{#if project.album && project.album.length > 0}
-							<button 
+							<button
 								onclick={(e) => { e.preventDefault(); e.stopPropagation(); openAlbum(project.album); }}
 								class="absolute bottom-[160px] right-6 p-2 rounded-full bg-accent-primary text-white shadow-lg transform translate-y-0 opacity-100 md:translate-y-4 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100 transition-all z-20 hover:scale-110"
 								title="Ver Álbum"
@@ -237,9 +208,9 @@
 						{#if project.github_url || project.live_url}
 							<div class="flex gap-2 mt-4">
 								{#if project.github_url}
-									<a 
-										href={project.github_url} 
-										target="_blank" 
+									<a
+										href={project.github_url}
+										target="_blank"
 										rel="noopener"
 										aria-label="Ver no GitHub"
 										class="p-2 bg-background-tertiary rounded-lg hover:bg-accent-primary/20 transition-colors"
@@ -250,9 +221,9 @@
 									</a>
 								{/if}
 								{#if project.live_url}
-									<a 
-										href={project.live_url} 
-										target="_blank" 
+									<a
+										href={project.live_url}
+										target="_blank"
 										rel="noopener"
 										aria-label="Ver demo"
 										class="p-2 bg-background-tertiary rounded-lg hover:bg-accent-primary/20 transition-colors"
@@ -267,6 +238,14 @@
 					</div>
 				{/each}
 			</div>
+
+			{#if visibleProjects.length < filteredProjects.length}
+				<div class="mt-10 text-center">
+					<button onclick={loadMore} class="btn-outline px-8 py-3">
+						Carregar mais ({filteredProjects.length - visibleProjects.length} restantes)
+					</button>
+				</div>
+			{/if}
 		{:else}
 			<div class="text-center py-20">
 				<svg class="w-16 h-16 mx-auto text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -280,92 +259,10 @@
 </div>
 
 {#if selectedAlbum}
-	<div class="fixed inset-0 z-[100]">
-		<button
-			type="button"
-			class="absolute inset-0 bg-black/95 backdrop-blur-sm"
-			aria-label="Fechar álbum"
-			onclick={closeAlbum}
-		></button>
-
-		<div class="absolute inset-0 flex items-center justify-center">
-		<!-- Close Button -->
-		<button 
-			onclick={closeAlbum}
-			class="absolute p-3 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all z-[110] bg-black/20"
-			style="top: calc(env(safe-area-inset-top) + 1.25rem); right: calc(env(safe-area-inset-right) + 1.25rem);"
-			aria-label="Fechar álbum"
-		>
-			<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-			</svg>
-		</button>
-
-		<!-- Navigation Buttons -->
-		<button 
-			type="button"
-			onclick={prevAlbumItem}
-			disabled={selectedAlbum.length <= 1}
-			class="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 p-2 sm:p-4 text-white rounded-full transition-all z-[110] bg-black/60 shadow-lg backdrop-blur-sm hover:bg-white/20 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:bg-black/60"
-			aria-label="Anterior"
-		>
-			<svg class="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-			</svg>
-		</button>
-
-		<button 
-			type="button"
-			onclick={nextAlbumItem}
-			disabled={selectedAlbum.length <= 1}
-			class="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 p-2 sm:p-4 text-white rounded-full transition-all z-[110] bg-black/60 shadow-lg backdrop-blur-sm hover:bg-white/20 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:bg-black/60"
-			aria-label="Próximo"
-		>
-			<svg class="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-			</svg>
-		</button>
-
-		<!-- Media Container -->
-		<div class="w-full h-full flex items-center justify-center p-4 sm:p-12">
-			<div class="relative w-full max-w-[95vw] sm:max-w-5xl max-h-[85vh] flex flex-col items-center justify-center animate-fadeIn">
-				<div class="w-full max-h-[75vh] flex items-center justify-center rounded-2xl overflow-hidden shadow-2xl bg-zinc-900/50 border border-white/10">
-					{#if selectedAlbum[currentAlbumIndex].type === 'image'}
-						<img 
-							src={selectedAlbum[currentAlbumIndex].url} 
-							alt="Project media {currentAlbumIndex + 1}" 
-							class="max-h-[75vh] w-auto object-contain"
-						/>
-					{:else}
-						<video 
-							src={selectedAlbum[currentAlbumIndex].url} 
-							controls 
-							autoplay
-							class="max-h-[75vh] w-full aspect-video bg-black"
-						>
-							<track kind="captions" />
-						</video>
-					{/if}
-				</div>
-
-				<!-- Counter -->
-				<div class="mt-6 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-white/80 text-sm font-medium backdrop-blur-md">
-					{currentAlbumIndex + 1} / {selectedAlbum.length}
-				</div>
-			</div>
-		</div>
-		</div>
-	</div>
+	<AlbumViewer album={selectedAlbum} onclose={closeAlbum} />
 {/if}
 
 <style>
-	@keyframes fadeIn {
-		from { opacity: 0; transform: scale(0.98); }
-		to { opacity: 1; transform: scale(1); }
-	}
-	:global(.animate-fadeIn) {
-		animation: fadeIn 0.3s ease-out forwards;
-	}
 	.line-clamp-2 {
 		display: -webkit-box;
 		-webkit-line-clamp: 2;

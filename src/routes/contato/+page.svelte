@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { db } from '$lib/firebaseConfig';
-	import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 	import { lang, t } from '$lib/i18n';
+	import { validateContactForm, hasErrors, type FormErrors } from '$lib/validation';
 
 	let name = $state('');
 	let email = $state('');
@@ -10,26 +9,45 @@
 	let loading = $state(false);
 	let success = $state(false);
 	let error = $state('');
+	let fieldErrors = $state<FormErrors>({});
+
+	function validate() {
+		fieldErrors = validateContactForm(name, email, message);
+		return !hasErrors(fieldErrors);
+	}
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
-		loading = true;
 		error = '';
 
+		if (!validate()) return;
+
+		loading = true;
 		try {
-			await addDoc(collection(db, 'contacts'), {
-				name,
-				email,
-				message,
-				created_at: serverTimestamp()
+			const res = await fetch('/api/contact', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ name, email, message })
 			});
+
+			const data = await res.json();
+
+			if (!res.ok) {
+				if (data.errors) {
+					fieldErrors = data.errors;
+				} else {
+					error = data.error ?? t('contact.sendError', $lang);
+				}
+				return;
+			}
 
 			success = true;
 			name = '';
 			email = '';
 			message = '';
-		} catch (err) {
-			error = err instanceof Error ? err.message : t('contact.sendError', $lang);
+			fieldErrors = {};
+		} catch {
+			error = t('contact.sendError', $lang);
 		} finally {
 			loading = false;
 		}
@@ -43,7 +61,6 @@
 
 <div class="min-h-screen py-24">
 	<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-		<!-- Header -->
 		<div class="text-center mb-12">
 			<h1 class="text-4xl sm:text-5xl font-bold mb-4">
 				{t('contact.headerTitleA', $lang)} <span class="gradient-text">{t('contact.headerTitleB', $lang)}</span>
@@ -54,7 +71,6 @@
 		</div>
 
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-			<!-- Contact Info -->
 			<div in:fly={{ x: -20, duration: 400 }}>
 				<h2 class="text-2xl font-bold mb-6">{t('contact.infoTitle', $lang)}</h2>
 				
@@ -123,7 +139,6 @@
 				</div>
 			</div>
 
-			<!-- Contact Form -->
 			<div in:fly={{ x: 20, duration: 400, delay: 100 }}>
 				{#if success}
 					<div class="card text-center py-12">
@@ -155,10 +170,14 @@
 								type="text"
 								id="name"
 								bind:value={name}
+								oninput={() => { if (fieldErrors.name) fieldErrors = { ...fieldErrors, name: undefined }; }}
 								required
-								class="input"
+								class="input {fieldErrors.name ? 'border-red-500' : ''}"
 								placeholder={t('contact.placeholderName', $lang)}
 							/>
+							{#if fieldErrors.name}
+								<p class="mt-1 text-xs text-red-400">{fieldErrors.name}</p>
+							{/if}
 						</div>
 
 						<div class="mb-4">
@@ -167,10 +186,14 @@
 								type="email"
 								id="email"
 								bind:value={email}
+								oninput={() => { if (fieldErrors.email) fieldErrors = { ...fieldErrors, email: undefined }; }}
 								required
-								class="input"
+								class="input {fieldErrors.email ? 'border-red-500' : ''}"
 								placeholder={t('contact.placeholderEmail', $lang)}
 							/>
+							{#if fieldErrors.email}
+								<p class="mt-1 text-xs text-red-400">{fieldErrors.email}</p>
+							{/if}
 						</div>
 
 						<div class="mb-6">
@@ -178,11 +201,17 @@
 							<textarea
 								id="message"
 								bind:value={message}
+								oninput={() => { if (fieldErrors.message) fieldErrors = { ...fieldErrors, message: undefined }; }}
 								required
 								rows="5"
-								class="input resize-none"
+								class="input resize-none {fieldErrors.message ? 'border-red-500' : ''}"
 								placeholder={t('contact.placeholderMessage', $lang)}
 							></textarea>
+							{#if fieldErrors.message}
+								<p class="mt-1 text-xs text-red-400">{fieldErrors.message}</p>
+							{:else}
+								<p class="mt-1 text-xs text-slate-500 text-right">{message.length}/2000</p>
+							{/if}
 						</div>
 
 						<button

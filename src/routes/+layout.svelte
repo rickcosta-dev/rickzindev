@@ -34,19 +34,24 @@
 
 <svelte:head>
 	<title>RickZin | Fullstack Developer</title>
-	<meta name="description" content="Fullstack Developer specializing in modern web technologies. SvelteKit, Firebase, TypeScript." />
+	<meta name="description" content="Fullstack Developer especializado em SvelteKit, Firebase e TypeScript. Criando aplicações web modernas, performáticas e escaláveis." />
+	<meta name="keywords" content="fullstack developer, sveltekit, typescript, firebase, web development, rickzin" />
+	<meta name="author" content="RickZin" />
 	<meta property="og:title" content="RickZin | Fullstack Developer" />
-	<meta property="og:description" content="Fullstack Developer specializing in modern web technologies" />
+	<meta property="og:description" content="Fullstack Developer especializado em SvelteKit, Firebase e TypeScript." />
 	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://rickzin.dev" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content="RickZin | Fullstack Developer" />
+	<meta name="twitter:description" content="Fullstack Developer especializado em SvelteKit, Firebase e TypeScript." />
+	<link rel="canonical" href="https://rickzin.dev" />
 	<link rel="icon" type="image/gif" href={favicon} />
 </svelte:head>
 
 <div class="min-h-screen flex flex-col">
-	<!-- Navigation -->
 	<nav class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 {scrolled ? 'glass shadow-lg' : ''}">
 		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 			<div class="flex items-center justify-between h-16">
-				<!-- Logo -->
 				<a href="/" class="flex items-center gap-2">
 					<div class="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center">
 						<img src={favicon} alt="Logo" class="w-full h-full object-cover" />
@@ -54,7 +59,6 @@
 					<span class="hidden sm:block text-lg font-bold">Rick<span class="text-accent-primary">Zin</span></span>
 				</a>
 
-				<!-- Desktop Navigation -->
 				<div class="hidden md:flex items-center gap-8">
 					{#each links as link}
 						<a 
@@ -66,7 +70,6 @@
 					{/each}
 				</div>
 
-				<!-- Actions -->
 				<div class="hidden md:flex items-center gap-3">
 					<div class="relative">
 						<button
@@ -100,7 +103,6 @@
 					</a>
 				</div>
 
-				<!-- Mobile Menu Button -->
 				<button 
 					onclick={toggleMobileMenu}
 					class="md:hidden p-2 text-slate-400 hover:text-white"
@@ -117,7 +119,6 @@
 			</div>
 		</div>
 
-		<!-- Mobile Menu -->
 		{#if mobileMenuOpen}
 			<div class="md:hidden glass border-t border-border-color">
 				<div class="px-4 py-4 space-y-3">
@@ -157,16 +158,13 @@
 		{/if}
 	</nav>
 
-	<!-- Main Content -->
 	<main class="flex-1 pt-16">
 		{@render children()}
 	</main>
 
-	<!-- Footer -->
 	<footer class="bg-background-secondary border-t border-border-color">
 		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 			<div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-				<!-- Brand -->
 				<div class="md:col-span-2">
 					<div class="flex items-center gap-2 mb-4">
 						<img src={rickPhoto} alt="RickZin" class="w-10 h-10 rounded-xl object-cover border border-white/10" />
@@ -177,7 +175,6 @@
 					</p>
 				</div>
 
-				<!-- Quick Links -->
 				<div>
 					<h4 class="font-semibold mb-4">{t('footer.nav', $lang)}</h4>
 					<ul class="space-y-2">
@@ -188,7 +185,6 @@
 					</ul>
 				</div>
 
-				<!-- Social -->
 				<div>
 					<h4 class="font-semibold mb-4">{t('footer.connect', $lang)}</h4>
 					<div class="flex gap-4">

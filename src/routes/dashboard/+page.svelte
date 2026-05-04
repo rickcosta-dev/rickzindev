@@ -239,9 +239,7 @@
 		const featuredOrder =
 			projectForm.featured && projectForm.featured_order !== '' ? Number(projectForm.featured_order) : null;
 
-		// Converte a string do input date para objeto Date
 		const selectedDate = new Date(projectForm.created_at);
-		// Ajusta para o fuso horário local se necessário, ou usa como UTC
 		
 		const projectData = {
 			title: projectForm.title,
@@ -253,7 +251,7 @@
 			featured_order: featuredOrder,
 			github_url: projectForm.github_url || null,
 			live_url: projectForm.live_url || null,
-			created_at: selectedDate, // Salva como objeto Date (Firestore converte para Timestamp)
+			created_at: selectedDate,
 			updated_at: serverTimestamp()
 		};
 
@@ -298,7 +296,6 @@
 
 <div class="min-h-screen py-24">
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-		<!-- Header -->
 		<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
 			<div>
 				<h1 class="text-3xl font-bold">
@@ -314,7 +311,6 @@
 			</button>
 		</div>
 
-		<!-- Tabs -->
 		<div class="flex gap-2 mb-6">
 			<button
 				onclick={() => activeTab = 'projects'}
@@ -336,7 +332,6 @@
 			</button>
 		</div>
 
-		<!-- Projects Tab -->
 		{#if activeTab === 'projects'}
 			<div class="card">
 				<div class="flex justify-between items-center mb-6">
@@ -433,7 +428,6 @@
 			</div>
 		{/if}
 
-		<!-- Messages Tab -->
 		{#if activeTab === 'messages'}
 			<div class="card">
 				<h2 class="text-xl font-semibold mb-6">Mensagens Recebidas</h2>
@@ -554,7 +548,6 @@
 	</div>
 </div>
 
-<!-- Modal -->
 {#if showModal}
 	<div 
 		class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"

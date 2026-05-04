@@ -13,7 +13,6 @@
 </svelte:head>
 
 <div class="min-h-screen">
-	<!-- Hero Image -->
 	<div class="relative h-[50vh] min-h-[400px]">
 		{#if project.image_url}
 			<img 
@@ -30,7 +29,6 @@
 		{/if}
 		<div class="absolute inset-0 bg-gradient-to-t from-background-primary via-background-primary/50 to-transparent"></div>
 		
-		<!-- Navigation -->
 		<div class="absolute top-24 left-0 right-0">
 			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 				<a href="/projetos" class="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
@@ -43,13 +41,10 @@
 		</div>
 	</div>
 
-	<!-- Content -->
 	<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-32 relative z-10">
 		<div class="card mb-8" in:fly={{ y: 20, duration: 400 }}>
-			<!-- Title -->
 			<h1 class="text-3xl sm:text-4xl font-bold mb-4">{project.title}</h1>
 			
-			<!-- Links -->
 			<div class="flex flex-wrap gap-4 mb-6">
 				{#if project.github_url}
 					<a 
@@ -79,7 +74,6 @@
 				{/if}
 			</div>
 
-			<!-- Tech Stack -->
 			{#if project.tech && project.tech.length > 0}
 				<div class="flex flex-wrap gap-2 mb-6">
 					{#each project.tech as tech}
@@ -90,13 +84,11 @@
 				</div>
 			{/if}
 
-			<!-- Description -->
 			<div class="prose prose-invert max-w-none">
 				<p class="text-slate-300 text-lg leading-relaxed whitespace-pre-wrap">{project.description}</p>
 			</div>
 		</div>
 
-		<!-- Navigation Between Projects -->
 		<div class="flex justify-between gap-4">
 			{#if prevProject}
 				<a href="/projetos/{prevProject.id}" class="flex-1 card flex items-center gap-3 hover:border-accent-primary/50">
