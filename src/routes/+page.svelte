@@ -7,6 +7,8 @@
 	import agLogo from '$lib/assets/AG_S_F.png';
 	import pawnHubLogo from '$lib/assets/pawnhub.png';
 	import aslLogo from '$lib/assets/asl.png';
+	import devsampLogo from '$lib/assets/projetos/devsamp.png';
+	import devscriptAvatar from '$lib/assets/Devscript.webp';
 	import calasansAvatar from '$lib/assets/calasans.png';
 	import crazyArkzkAvatar from '$lib/assets/crazy-arkzk.png';
 	import rickzinOwnerAvatar from '$lib/assets/giño-rick-y-morty.gif';
@@ -133,6 +135,26 @@
 			],
 			discordUrl: 'https://discord.gg/r5jTW2WXHB',
 			githubUrl: 'https://github.com/atlassystemlab/AtlasDev'
+		},
+		{
+			id: 'devsamp',
+			name: 'DevSamp',
+			logo: devsampLogo,
+			owner: {
+				name: 'DevScript',
+				title: 'Dono da DevSamp',
+				avatar: devscriptAvatar,
+				bio: 'Criador da DevSamp, com a missão de apoiar, ensinar e impulsionar a comunidade de desenvolvedores SA-MP.'
+			},
+			about: [
+				'A DevSamp é uma comunidade voltada ao desenvolvimento de servidores SA-MP, com foco principal na linguagem Pawn e no suporte contínuo à comunidade.',
+				'Diferente de muitos espaços genéricos, a DevSamp mantém sua essência centrada no aprendizado, ajudando tanto iniciantes quanto desenvolvedores mais experientes a evoluírem suas habilidades.',
+				'O objetivo é oferecer um ambiente ativo, organizado e dedicado, onde conteúdos relacionados ao Pawn e desenvolvimento de gamemodes tenham prioridade e não sejam deixados de lado.',
+				'Além disso, a comunidade também conta com espaços off-topic, permitindo interação mais descontraída entre os membros e fortalecendo a convivência.',
+				'A DevSamp foi criada por DevScript com a missão de apoiar, ensinar e impulsionar a comunidade de desenvolvedores SA-MP.'
+			],
+			discordUrl: 'https://discord.gg/xGrRY5k7wC',
+			githubUrl: 'https://github.com/DevSamp-Team'
 		},
 		{
 			id: 'pawnhub',
@@ -303,9 +325,7 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<!-- Hero Section -->
 <section class="min-h-[85vh] pt-16 flex items-center justify-center relative overflow-hidden">
-	<!-- Animated Background -->
 	<div class="absolute inset-0 overflow-hidden">
 		<div class="absolute top-1/4 -left-1/4 w-[600px] h-[600px] bg-accent-primary/20 rounded-full blur-[120px] animate-pulse-slow"></div>
 		<div class="absolute bottom-1/4 -right-1/4 w-[600px] h-[600px] bg-accent-secondary/20 rounded-full blur-[120px] animate-pulse-slow" style="animation-delay: 1.5s;"></div>
@@ -357,7 +377,6 @@
 		></button>
 
 		<div class="absolute inset-0 flex items-center justify-center">
-		<!-- Close Button -->
 		<button 
 			onclick={closeAlbum}
 			class="absolute p-3 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all z-[110] bg-black/20"
@@ -369,7 +388,6 @@
 			</svg>
 		</button>
 
-		<!-- Navigation Buttons -->
 		<button 
 			type="button"
 			onclick={prevAlbumItem}
@@ -394,7 +412,6 @@
 			</svg>
 		</button>
 
-		<!-- Media Container -->
 		<div class="w-full h-full flex items-center justify-center p-4 sm:p-12">
 			<div class="relative w-full max-w-[95vw] sm:max-w-5xl max-h-[85vh] flex flex-col items-center justify-center animate-fadeIn">
 				<div class="w-full max-h-[75vh] flex items-center justify-center rounded-2xl overflow-hidden shadow-2xl bg-zinc-900/50 border border-white/10">
@@ -416,7 +433,6 @@
 					{/if}
 				</div>
 
-				<!-- Counter -->
 				<div class="mt-6 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-white/80 text-sm font-medium backdrop-blur-md">
 					{currentAlbumIndex + 1} / {selectedAlbum.length}
 				</div>
@@ -509,6 +525,7 @@
 						</svg>
 						Discord
 					</a>
+					{#if selectedPartner.githubUrl}
 					<a
 						href={selectedPartner.githubUrl}
 						target="_blank"
@@ -520,13 +537,13 @@
 						</svg>
 						GitHub
 					</a>
+					{/if}
 				</div>
 			</div>
 		</div>
 	</div>
 {/if}
 
-<!-- Tech Stack Section -->
 <section id="tech" class="py-20 reveal">
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 		<div class="text-center mb-16">
@@ -558,7 +575,6 @@
 	</div>
 </section>
 
-<!-- Featured Projects Section -->
 <section id="projects" class="py-20 bg-background-secondary reveal">
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 		<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-16">
@@ -663,7 +679,7 @@
 				{#each partners as partner}
 					<button
 						type="button"
-						class={partner.id === 'asl' ? 'marquee-item marquee-item-featured' : 'marquee-item'}
+						class={partner.id === 'asl' || partner.id === 'devsamp' ? 'marquee-item marquee-item-featured' : 'marquee-item'}
 						onclick={() => openPartner(partner)}
 						aria-label={"Abrir informações da comunidade " + partner.name}
 					>
@@ -675,7 +691,7 @@
 									? 'w-7 h-7 rounded-lg object-cover border border-blue-400/40 bg-blue-500/10'
 									: 'w-7 h-7 rounded-lg object-cover border border-white/10 bg-black/20'}
 							/>
-							{#if partner.id === 'asl'}
+							{#if partner.id === 'asl' || partner.id === 'devsamp'}
 								<span class="absolute -top-4 left-1/2 -translate-x-1/2 text-base drop-shadow" aria-hidden="true">👑</span>
 							{/if}
 						</div>
@@ -689,7 +705,6 @@
 	</div>
 </section>
 
-<!-- Services Section -->
 <section id="services" class="py-20 reveal">
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 		<div class="text-center mb-16">
@@ -720,7 +735,6 @@
 	</div>
 </section>
 
-<!-- Testimonials Section -->
 <section id="testimonials" class="py-20 bg-background-secondary reveal">
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 		<div class="text-center mb-16">
@@ -787,7 +801,6 @@
 	</div>
 </section>
 
-<!-- CTA Section -->
 <section class="py-20 reveal">
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 		<div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-accent-primary/20 to-accent-secondary/20 border border-accent-primary/30 p-12 sm:p-20 text-center">
