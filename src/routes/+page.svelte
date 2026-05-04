@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { fly, fade } from 'svelte/transition';
+	import { fly } from 'svelte/transition';
 	import { db, type Project, type Testimonial } from '$lib/firebaseConfig';
 	import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+	import AlbumViewer from '$lib/components/AlbumViewer.svelte';
 	import rickPhoto from '$lib/assets/rick.jpg';
 	import agLogo from '$lib/assets/AG_S_F.png';
 	import pawnHubLogo from '$lib/assets/pawnhub.png';
@@ -18,18 +19,12 @@
 	let testimonials = $state<Testimonial[]>([]);
 	let testimonialsLoading = $state(true);
 	let selectedAlbum = $state<{ url: string; type: 'image' | 'video' }[] | null>(null);
-	let currentAlbumIndex = $state(0);
 	let selectedPartner = $state<{
 		id: string;
 		name: string;
 		logo: string;
-		owner: {
-			name: string;
-			title: string;
-			avatar: string;
-			bio: string;
-		};
-		about: string[];
+		owner: { name: string; title: string; avatar: string; bio: string };
+		about: readonly string[];
 		discordUrl: string;
 		githubUrl: string;
 	} | null>(null);
@@ -37,7 +32,6 @@
 	function openAlbum(album: { url: string; type: 'image' | 'video' }[] | null) {
 		if (album && album.length > 0) {
 			selectedAlbum = album;
-			currentAlbumIndex = 0;
 			document.documentElement.style.overflow = 'hidden';
 			document.body.style.overflow = 'hidden';
 		}
@@ -49,40 +43,9 @@
 		document.body.style.overflow = '';
 	}
 
-	function nextAlbumItem(e?: Event) {
-		if (e) {
-			e.preventDefault();
-			e.stopPropagation();
-		}
-		if (selectedAlbum) {
-			currentAlbumIndex = (currentAlbumIndex + 1) % selectedAlbum.length;
-		}
-	}
-
-	function prevAlbumItem(e?: Event) {
-		if (e) {
-			e.preventDefault();
-			e.stopPropagation();
-		}
-		if (selectedAlbum) {
-			currentAlbumIndex = (currentAlbumIndex - 1 + selectedAlbum.length) % selectedAlbum.length;
-		}
-	}
-
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') {
-			if (selectedAlbum) closeAlbum();
 			if (selectedPartner) closePartner();
-			return;
-		}
-		if (!selectedAlbum) return;
-		if (e.key === 'ArrowRight') nextAlbumItem();
-		if (e.key === 'ArrowLeft') prevAlbumItem();
-	}
-
-	function handleAlbumOverlayClick(e: MouseEvent) {
-		if (e.target === e.currentTarget) {
-			closeAlbum();
 		}
 	}
 
@@ -368,78 +331,7 @@
 </section>
 
 {#if selectedAlbum}
-	<div class="fixed inset-0 z-[100]">
-		<button
-			type="button"
-			class="absolute inset-0 bg-black/95 backdrop-blur-sm"
-			aria-label="Fechar álbum"
-			onclick={closeAlbum}
-		></button>
-
-		<div class="absolute inset-0 flex items-center justify-center">
-		<button 
-			onclick={closeAlbum}
-			class="absolute p-3 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all z-[110] bg-black/20"
-			style="top: calc(env(safe-area-inset-top) + 1.25rem); right: calc(env(safe-area-inset-right) + 1.25rem);"
-			aria-label="Fechar álbum"
-		>
-			<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-			</svg>
-		</button>
-
-		<button 
-			type="button"
-			onclick={prevAlbumItem}
-			disabled={selectedAlbum.length <= 1}
-			class="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 p-2 sm:p-4 text-white rounded-full transition-all z-[110] bg-black/60 shadow-lg backdrop-blur-sm hover:bg-white/20 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:bg-black/60"
-			aria-label="Anterior"
-		>
-			<svg class="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-			</svg>
-		</button>
-
-		<button 
-			type="button"
-			onclick={nextAlbumItem}
-			disabled={selectedAlbum.length <= 1}
-			class="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 p-2 sm:p-4 text-white rounded-full transition-all z-[110] bg-black/60 shadow-lg backdrop-blur-sm hover:bg-white/20 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:bg-black/60"
-			aria-label="Próximo"
-		>
-			<svg class="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-			</svg>
-		</button>
-
-		<div class="w-full h-full flex items-center justify-center p-4 sm:p-12">
-			<div class="relative w-full max-w-[95vw] sm:max-w-5xl max-h-[85vh] flex flex-col items-center justify-center animate-fadeIn">
-				<div class="w-full max-h-[75vh] flex items-center justify-center rounded-2xl overflow-hidden shadow-2xl bg-zinc-900/50 border border-white/10">
-					{#if selectedAlbum[currentAlbumIndex].type === 'image'}
-						<img 
-							src={selectedAlbum[currentAlbumIndex].url} 
-							alt="Project media {currentAlbumIndex + 1}" 
-							class="max-h-[75vh] w-auto object-contain"
-						/>
-					{:else}
-						<video 
-							src={selectedAlbum[currentAlbumIndex].url} 
-							controls 
-							autoplay
-							class="max-h-[75vh] w-full aspect-video bg-black"
-						>
-							<track kind="captions" />
-						</video>
-					{/if}
-				</div>
-
-				<div class="mt-6 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-white/80 text-sm font-medium backdrop-blur-md">
-					{currentAlbumIndex + 1} / {selectedAlbum.length}
-				</div>
-			</div>
-		</div>
-		</div>
-	</div>
+	<AlbumViewer album={selectedAlbum} onclose={closeAlbum} />
 {/if}
 
 {#if selectedPartner}
