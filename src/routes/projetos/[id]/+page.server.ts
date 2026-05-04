@@ -25,6 +25,24 @@ function getDb() {
 	return getFirestore(app);
 }
 
+/** Converte qualquer Timestamp do Firestore ou Date para ISO string serializável */
+function serializeDate(value: unknown): string | null {
+	if (!value) return null;
+	if (typeof (value as any).toDate === 'function') return (value as any).toDate().toISOString();
+	if (value instanceof Date) return value.toISOString();
+	if (typeof value === 'string') return value;
+	return null;
+}
+
+/** Garante que o projeto retornado seja um POJO serializável pelo SvelteKit */
+function serializeProject(raw: Record<string, unknown>): Project {
+	return {
+		...(raw as Project),
+		created_at: serializeDate(raw.created_at),
+		updated_at: serializeDate(raw.updated_at)
+	};
+}
+
 export const load: PageServerLoad = async ({ params }) => {
 	const db = getDb();
 	const projectRef = doc(db, 'projects', params.id);
@@ -34,20 +52,18 @@ export const load: PageServerLoad = async ({ params }) => {
 		throw error(404, 'Projeto não encontrado');
 	}
 
-	const project = { id: projectSnap.id, ...projectSnap.data() } as Project;
+	const project = serializeProject({ id: projectSnap.id, ...projectSnap.data() });
 
 	// Buscar projetos adjacentes para navegação
 	const q = query(collection(db, 'projects'), orderBy('created_at', 'desc'));
 	const allSnap = await getDocs(q);
-	const allProjects = allSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as Project[];
+	const allProjects = allSnap.docs.map((d) =>
+		serializeProject({ id: d.id, ...d.data() })
+	);
 
 	const currentIndex = allProjects.findIndex((p) => p.id === params.id);
 	const prevProject = currentIndex > 0 ? allProjects[currentIndex - 1] : null;
 	const nextProject = currentIndex < allProjects.length - 1 ? allProjects[currentIndex + 1] : null;
 
-	return {
-		project,
-		prevProject,
-		nextProject
-	};
+	return { project, prevProject, nextProject };
 };
