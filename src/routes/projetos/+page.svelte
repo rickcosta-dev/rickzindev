@@ -10,13 +10,17 @@
 	let allProjects = $state<Project[]>([]);
 	let filteredProjects = $state<Project[]>([]);
 	let loading = $state(true);
+	let loadError = $state(false);
 	let searchQuery = $state('');
 	let selectedTechs = $state<string[]>([]);
 	let allTechs = $state<string[]>([]);
 	let selectedAlbum = $state<{ url: string; type: 'image' | 'video' }[] | null>(null);
 	let page = $state(1);
+	let loadingMore = $state(false);
 
 	let visibleProjects = $derived(filteredProjects.slice(0, page * PAGE_SIZE));
+	let hasMore = $derived(visibleProjects.length < filteredProjects.length);
+	let remaining = $derived(filteredProjects.length - visibleProjects.length);
 
 	function openAlbum(album: { url: string; type: 'image' | 'video' }[] | null) {
 		if (album && album.length > 0) {
@@ -32,21 +36,32 @@
 		document.body.style.overflow = '';
 	}
 
-	onMount(async () => {
+	async function loadProjects() {
+		loading = true;
+		loadError = false;
 		try {
 			const q = query(collection(db, 'projects'), orderBy('created_at', 'desc'));
 			const snap = await getDocs(q);
 			const data = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Project[];
-
 			allProjects = data;
 			filteredProjects = data;
 			allTechs = [...new Set(data.flatMap((p) => p.tech || []))];
 		} catch (err) {
 			console.error('Error loading projects:', err);
+			loadError = true;
 		} finally {
 			loading = false;
 		}
-	});
+	}
+
+	onMount(loadProjects);
+
+	// Debounce para busca
+	let searchTimer: ReturnType<typeof setTimeout>;
+	function onSearchInput() {
+		clearTimeout(searchTimer);
+		searchTimer = setTimeout(filterProjects, 300);
+	}
 
 	function filterProjects() {
 		page = 1;
@@ -55,10 +70,8 @@
 				!searchQuery ||
 				project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
 				project.description?.toLowerCase().includes(searchQuery.toLowerCase());
-
 			const matchesTech =
 				selectedTechs.length === 0 || selectedTechs.some((tech) => project.tech?.includes(tech));
-
 			return matchesSearch && matchesTech;
 		});
 	}
@@ -77,13 +90,13 @@
 		page = 1;
 	}
 
-	function loadMore() {
+	async function loadMore() {
+		loadingMore = true;
+		// Pequeno delay para feedback visual
+		await new Promise((r) => setTimeout(r, 200));
 		page++;
+		loadingMore = false;
 	}
-
-	$effect(() => {
-		if (searchQuery !== undefined) filterProjects();
-	});
 </script>
 
 <svelte:head>
@@ -105,7 +118,7 @@
 			</p>
 		</div>
 
-		<div class="flex flex-col lg:flex-row gap-4 mb-8">
+		<div class="flex flex-col lg:flex-row gap-4 mb-4">
 			<div class="relative flex-1">
 				<svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -114,8 +127,9 @@
 					type="text"
 					placeholder="Buscar projetos..."
 					bind:value={searchQuery}
-					oninput={filterProjects}
+					oninput={onSearchInput}
 					class="input pl-12"
+					aria-label="Buscar projetos"
 				/>
 			</div>
 
@@ -124,6 +138,7 @@
 					<button
 						onclick={() => toggleTech(tech)}
 						class="px-3 py-2 text-sm rounded-lg transition-all duration-200 {selectedTechs.includes(tech) ? 'bg-accent-primary text-white' : 'bg-background-tertiary text-slate-400 hover:text-white'}"
+						aria-pressed={selectedTechs.includes(tech)}
 					>
 						{tech}
 					</button>
@@ -133,11 +148,23 @@
 						onclick={clearFilters}
 						class="px-3 py-2 text-sm rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all"
 					>
-						Limpar
+						Limpar filtros
 					</button>
 				{/if}
 			</div>
 		</div>
+
+		<!-- Contagem de resultados -->
+		{#if !loading && !loadError}
+			<p class="text-sm text-slate-500 mb-6">
+				{#if searchQuery || selectedTechs.length > 0}
+					{filteredProjects.length} {filteredProjects.length === 1 ? 'projeto encontrado' : 'projetos encontrados'}
+					de {allProjects.length} no total
+				{:else}
+					{allProjects.length} {allProjects.length === 1 ? 'projeto' : 'projetos'} no total
+				{/if}
+			</p>
+		{/if}
 
 		{#if loading}
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -152,6 +179,19 @@
 						</div>
 					</div>
 				{/each}
+			</div>
+		{:else if loadError}
+			<div class="text-center py-20">
+				<div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
+					<svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+					</svg>
+				</div>
+				<h3 class="text-xl font-semibold mb-2">Erro ao carregar projetos</h3>
+				<p class="text-slate-400 mb-6">Verifique sua conexão e tente novamente.</p>
+				<button onclick={loadProjects} class="btn-primary">
+					Tentar novamente
+				</button>
 			</div>
 		{:else if filteredProjects.length > 0}
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -239,20 +279,42 @@
 				{/each}
 			</div>
 
-			{#if visibleProjects.length < filteredProjects.length}
+			{#if hasMore}
 				<div class="mt-10 text-center">
-					<button onclick={loadMore} class="btn-outline px-8 py-3">
-						Carregar mais ({filteredProjects.length - visibleProjects.length} restantes)
+					<button
+						onclick={loadMore}
+						disabled={loadingMore}
+						class="btn-outline px-8 py-3 inline-flex items-center gap-2"
+					>
+						{#if loadingMore}
+							<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+							</svg>
+							Carregando...
+						{:else}
+							Carregar mais
+							<span class="px-2 py-0.5 rounded-full bg-accent-primary/15 text-accent-primary text-xs font-semibold">
+								+{remaining}
+							</span>
+						{/if}
 					</button>
 				</div>
 			{/if}
 		{:else}
 			<div class="text-center py-20">
-				<svg class="w-16 h-16 mx-auto text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+				<svg class="w-16 h-16 mx-auto text-slate-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
 				</svg>
 				<h3 class="text-xl font-semibold mb-2">Nenhum projeto encontrado</h3>
-				<p class="text-slate-400">Tente ajustar os filtros de busca</p>
+				<p class="text-slate-400 mb-6">
+					Nenhum resultado para
+					{#if searchQuery}<strong class="text-slate-300">"{searchQuery}"</strong>{/if}
+					{#if selectedTechs.length > 0}com os filtros selecionados{/if}.
+				</p>
+				<button onclick={clearFilters} class="btn-outline px-6 py-2 text-sm">
+					Limpar filtros
+				</button>
 			</div>
 		{/if}
 	</div>

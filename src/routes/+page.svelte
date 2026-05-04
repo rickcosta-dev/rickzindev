@@ -337,7 +337,7 @@
 				<div class="absolute inset-0 bg-accent-primary/20 rounded-full blur-2xl animate-pulse"></div>
 				<img 
 					src={rickPhoto} 
-					alt="Rick Gonzalez" 
+					alt="RickZin" 
 					class="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full object-cover border-2 border-accent-primary/30 shadow-2xl"
 				/>
 				<div class="absolute -bottom-2 -right-2 px-3 py-1 rounded-full bg-background-secondary border border-accent-primary/30 flex items-center gap-2">
@@ -609,6 +609,7 @@
 									<img 
 										src={project.image_url} 
 										alt={project.title}
+										loading="lazy"
 										class="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
 									/>
 								{:else}

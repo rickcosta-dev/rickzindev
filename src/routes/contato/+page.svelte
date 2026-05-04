@@ -10,10 +10,27 @@
 	let success = $state(false);
 	let error = $state('');
 	let fieldErrors = $state<FormErrors>({});
+	let copiedEmail = $state(false);
+	let copiedDiscord = $state(false);
 
 	function validate() {
 		fieldErrors = validateContactForm(name, email, message);
 		return !hasErrors(fieldErrors);
+	}
+
+	async function copyToClipboard(text: string, type: 'email' | 'discord') {
+		try {
+			await navigator.clipboard.writeText(text);
+			if (type === 'email') {
+				copiedEmail = true;
+				setTimeout(() => copiedEmail = false, 2000);
+			} else {
+				copiedDiscord = true;
+				setTimeout(() => copiedDiscord = false, 2000);
+			}
+		} catch {
+			// fallback silencioso
+		}
 	}
 
 	async function handleSubmit(e: Event) {
@@ -81,11 +98,29 @@
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
 							</svg>
 						</div>
-						<div>
+						<div class="flex-1 min-w-0">
 							<h3 class="font-semibold mb-1">Email</h3>
-							<a href="mailto:rickdev0021@gmail.com" class="text-slate-400 hover:text-accent-primary transition-colors">
-								rickdev0021@gmail.com
-							</a>
+							<div class="flex items-center gap-2">
+								<a href="mailto:rickdev0021@gmail.com" class="text-slate-400 hover:text-accent-primary transition-colors truncate">
+									rickdev0021@gmail.com
+								</a>
+								<button
+									onclick={() => copyToClipboard('rickdev0021@gmail.com', 'email')}
+									class="flex-shrink-0 p-1 rounded text-slate-500 hover:text-white transition-colors"
+									aria-label="Copiar email"
+									title={copiedEmail ? 'Copiado!' : 'Copiar'}
+								>
+									{#if copiedEmail}
+										<svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+										</svg>
+									{:else}
+										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+										</svg>
+									{/if}
+								</button>
+							</div>
 						</div>
 					</div>
 
@@ -95,9 +130,27 @@
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
 							</svg>
 						</div>
-						<div>
+						<div class="flex-1 min-w-0">
 							<h3 class="font-semibold mb-1">Discord</h3>
-							<span class="text-slate-400">rickzin021</span>
+							<div class="flex items-center gap-2">
+								<span class="text-slate-400">rickzin021</span>
+								<button
+									onclick={() => copyToClipboard('rickzin021', 'discord')}
+									class="flex-shrink-0 p-1 rounded text-slate-500 hover:text-white transition-colors"
+									aria-label="Copiar usuário do Discord"
+									title={copiedDiscord ? 'Copiado!' : 'Copiar'}
+								>
+									{#if copiedDiscord}
+										<svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+										</svg>
+									{:else}
+										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+										</svg>
+									{/if}
+								</button>
+							</div>
 						</div>
 					</div>
 
@@ -141,7 +194,7 @@
 
 			<div in:fly={{ x: 20, duration: 400, delay: 100 }}>
 				{#if success}
-					<div class="card text-center py-12">
+					<div class="card text-center py-12" role="alert" aria-live="polite">
 						<div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/10 flex items-center justify-center">
 							<svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
@@ -149,7 +202,7 @@
 						</div>
 						<h3 class="text-xl font-bold mb-2">{t('contact.successTitle', $lang)}</h3>
 						<p class="text-slate-400 mb-6">{t('contact.successBody', $lang)}</p>
-						<button 
+						<button
 							onclick={() => success = false}
 							class="btn-outline"
 						>
@@ -157,9 +210,13 @@
 						</button>
 					</div>
 				{:else}
-					<form onsubmit={handleSubmit} class="card">
+					<form onsubmit={handleSubmit} class="card" novalidate>
 						{#if error}
-							<div class="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+							<div
+								class="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm"
+								role="alert"
+								aria-live="assertive"
+							>
 								{error}
 							</div>
 						{/if}

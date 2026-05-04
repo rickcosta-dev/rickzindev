@@ -2,16 +2,17 @@
 	import '../app.css';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
+	import { fly } from 'svelte/transition';
 	import favicon from '$lib/assets/giño-rick-y-morty.gif';
 	import { lang, languages, setLang, t } from '$lib/i18n';
 	import rickPhoto from '$lib/assets/rick.jpg';
 
 	let { children } = $props();
-	
+
 	let mobileMenuOpen = $state(false);
 	let scrolled = $state(false);
 	let langMenuOpen = $state(false);
-	
+
 	const links = [
 		{ href: '/', key: 'nav.home' },
 		{ href: '/projetos', key: 'nav.projects' },
@@ -20,15 +21,22 @@
 	];
 
 	onMount(() => {
-		const handleScroll = () => {
-			scrolled = window.scrollY > 50;
-		};
-		window.addEventListener('scroll', handleScroll);
+		const handleScroll = () => { scrolled = window.scrollY > 50; };
+		window.addEventListener('scroll', handleScroll, { passive: true });
 		return () => window.removeEventListener('scroll', handleScroll);
 	});
 
 	function toggleMobileMenu() {
 		mobileMenuOpen = !mobileMenuOpen;
+	}
+
+	function closeMobileMenu() {
+		mobileMenuOpen = false;
+	}
+
+	function isActive(href: string) {
+		if (href === '/') return $page.url.pathname === '/';
+		return $page.url.pathname.startsWith(href);
 	}
 </script>
 
@@ -49,23 +57,29 @@
 </svelte:head>
 
 <div class="min-h-screen flex flex-col">
+	<!-- Skip-to-content para acessibilidade -->
+	<a href="#main-content" class="skip-link">Ir para o conteúdo</a>
+
 	<nav class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 {scrolled ? 'glass shadow-lg' : ''}">
 		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 			<div class="flex items-center justify-between h-16">
 				<a href="/" class="flex items-center gap-2">
 					<div class="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center">
-						<img src={favicon} alt="Logo" class="w-full h-full object-cover" />
+						<img src={favicon} alt="Logo RickZin" class="w-full h-full object-cover" />
 					</div>
 					<span class="hidden sm:block text-lg font-bold">Rick<span class="text-accent-primary">Zin</span></span>
 				</a>
 
 				<div class="hidden md:flex items-center gap-8">
 					{#each links as link}
-						<a 
-							href={link.href} 
-							class="text-sm font-medium transition-colors duration-200 {$page.url.pathname === link.href ? 'text-accent-primary' : 'text-slate-400 hover:text-white'}"
+						<a
+							href={link.href}
+							class="text-sm font-medium transition-colors duration-200 relative {isActive(link.href) ? 'text-accent-primary' : 'text-slate-400 hover:text-white'}"
 						>
 							{t(link.key, $lang)}
+							{#if isActive(link.href)}
+								<span class="absolute -bottom-1 left-0 right-0 h-0.5 bg-accent-primary rounded-full"></span>
+							{/if}
 						</a>
 					{/each}
 				</div>
@@ -77,14 +91,22 @@
 							onclick={() => langMenuOpen = !langMenuOpen}
 							class="px-3 py-2 rounded-xl bg-background-tertiary border border-zinc-800 text-sm font-semibold text-slate-300 hover:text-white transition-colors"
 							aria-label="Selecionar idioma"
+							aria-expanded={langMenuOpen}
+							aria-haspopup="listbox"
 						>
 							{$lang.toUpperCase()}
 						</button>
 						{#if langMenuOpen}
-							<div class="absolute right-0 mt-2 w-28 rounded-xl border border-zinc-800 bg-background-secondary shadow-xl overflow-hidden">
+							<div
+								class="absolute right-0 mt-2 w-28 rounded-xl border border-zinc-800 bg-background-secondary shadow-xl overflow-hidden"
+								role="listbox"
+								aria-label="Idiomas disponíveis"
+							>
 								{#each languages as l}
 									<button
 										type="button"
+										role="option"
+										aria-selected={l.code === $lang}
 										onclick={() => { setLang(l.code); langMenuOpen = false; }}
 										class="w-full text-left px-3 py-2 text-sm {l.code === $lang ? 'text-accent-primary bg-accent-primary/10' : 'text-slate-300 hover:bg-white/5'}"
 									>
@@ -103,12 +125,14 @@
 					</a>
 				</div>
 
-				<button 
+				<button
 					onclick={toggleMobileMenu}
-					class="md:hidden p-2 text-slate-400 hover:text-white"
-					aria-label="Toggle menu"
+					class="md:hidden p-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-white/5"
+					aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+					aria-expanded={mobileMenuOpen}
+					aria-controls="mobile-menu"
 				>
-					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<svg class="w-6 h-6 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						{#if mobileMenuOpen}
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 						{:else}
@@ -120,45 +144,58 @@
 		</div>
 
 		{#if mobileMenuOpen}
-			<div class="md:hidden glass border-t border-border-color">
-				<div class="px-4 py-4 space-y-3">
-					<div class="flex items-center justify-between">
-						<span class="text-sm font-semibold text-slate-400">Idioma</span>
-						<div class="flex gap-2">
-							{#each languages as l}
-								<button
-									type="button"
-									onclick={() => setLang(l.code)}
-									class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-zinc-800 {l.code === $lang ? 'bg-accent-primary text-white' : 'bg-background-tertiary text-slate-300'}"
-								>
-									{l.label}
-								</button>
-							{/each}
-						</div>
-					</div>
+			<div
+				id="mobile-menu"
+				class="md:hidden glass border-t border-border-color"
+				in:fly={{ y: -8, duration: 200 }}
+				out:fly={{ y: -8, duration: 150 }}
+			>
+				<div class="px-4 py-4 space-y-1">
 					{#each links as link}
-						<a 
-							href={link.href} 
-							onclick={() => mobileMenuOpen = false}
-							class="block text-base font-medium {$page.url.pathname === link.href ? 'text-accent-primary' : 'text-slate-400'}"
+						<a
+							href={link.href}
+							onclick={closeMobileMenu}
+							class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-base font-medium transition-colors {isActive(link.href) ? 'text-accent-primary bg-accent-primary/10' : 'text-slate-400 hover:text-white hover:bg-white/5'}"
 						>
+							{#if isActive(link.href)}
+								<span class="w-1.5 h-1.5 rounded-full bg-accent-primary flex-shrink-0"></span>
+							{:else}
+								<span class="w-1.5 h-1.5 rounded-full bg-transparent flex-shrink-0"></span>
+							{/if}
 							{t(link.key, $lang)}
 						</a>
 					{/each}
-					<div class="pt-3 border-t border-border-color flex gap-3">
-						<a href="/login" class="flex-1 text-center py-2 text-slate-400 hover:text-white">
-							{t('nav.login', $lang)}
-						</a>
-						<a href="/dashboard" class="flex-1 text-center btn-primary py-2">
-							{t('nav.dashboard', $lang)}
-						</a>
+
+					<div class="pt-3 border-t border-border-color mt-3">
+						<div class="flex items-center justify-between mb-3 px-3">
+							<span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Idioma</span>
+							<div class="flex gap-1.5">
+								{#each languages as l}
+									<button
+										type="button"
+										onclick={() => setLang(l.code)}
+										class="px-2.5 py-1 rounded-lg text-xs font-semibold border {l.code === $lang ? 'bg-accent-primary border-accent-primary text-white' : 'border-zinc-700 bg-background-tertiary text-slate-300 hover:border-zinc-600'} transition-colors"
+									>
+										{l.label}
+									</button>
+								{/each}
+							</div>
+						</div>
+						<div class="flex gap-2">
+							<a href="/login" onclick={closeMobileMenu} class="flex-1 text-center py-2.5 text-sm text-slate-400 hover:text-white border border-zinc-800 rounded-xl transition-colors">
+								{t('nav.login', $lang)}
+							</a>
+							<a href="/dashboard" onclick={closeMobileMenu} class="flex-1 text-center btn-primary py-2.5 text-sm">
+								{t('nav.dashboard', $lang)}
+							</a>
+						</div>
 					</div>
 				</div>
 			</div>
 		{/if}
 	</nav>
 
-	<main class="flex-1 pt-16">
+	<main id="main-content" class="flex-1 pt-16">
 		{@render children()}
 	</main>
 
@@ -204,7 +241,7 @@
 
 			<div class="mt-8 pt-8 border-t border-border-color flex flex-col md:flex-row justify-between items-center gap-4">
 				<p class="text-slate-500 text-sm">
-					© {new Date().getFullYear()} Rick Gonzalez. Todos os direitos reservados.
+					© {new Date().getFullYear()} RickZin. Todos os direitos reservados.
 				</p>
 				<div class="flex gap-6 text-sm">
 					<span class="text-slate-500">Privacidade</span>

@@ -2,7 +2,7 @@
 
 ## 1. Project Overview
 
-- **Project Name**: Rick Gonzalez Portfolio
+- **Project Name**: RickZin Portfolio
 - **Type**: Fullstack Web Application (Portfolio SaaS-ready)
 - **Core Functionality**: Professional portfolio demonstrating fullstack capabilities with Supabase backend, authentication, and admin dashboard
 - **Target Users**: Recruiters, potential clients, fellow developers
